@@ -37,6 +37,76 @@ if treatment_col is None:
 
 print(f"Using treatments column: '{treatment_col}'")
 
+# Organizing data to embed
+data = []
+current_disease = None
+current_symptoms = []
+current_treatments = []
+
+# Loop through each row in the data frame
+for index, row in df.iterrows():
+    # Check if the disease column has a value
+    if pd.notna(row["Disease"]):
+        disease = row["Disease"]
+    else:
+        disease = None
+
+    # Check if the symptoms column has a value
+    if pd.notna(row["Detailed Symptoms"]):
+        symptom = row["Detailed Symptoms"]
+    else:
+        symptom = ""
+
+    # Check if the treatment column has a value
+    if pd.notna(row[treatment_col]):
+        treatment = row[treatment_col]
+    else:
+        treatment = ""
+
+    # Checking if a new disease name is found
+    if disease:
+        # If already collecting data for previous disease
+        if current_disease is not None:
+            data.append({
+                "disease": current_disease,
+                "symptoms": "\n".join(current_symptoms),
+                "treatments": "\n".join(current_treatments)
+            })
+
+        # Start tracking the new disease
+        current_disease = disease
+
+        # Reset the symptom list
+        current_symptoms = []
+        if symptom:
+            current_symptoms.append(symptom)
+
+        # Reset the treatment list
+        current_treatments = []
+        if treatment:
+            current_treatments.append(treatment)
+
+    # If no new disease
+    else:
+        # Add rest of the symptoms
+        if symptom:
+            current_symptoms.append(symptom)
+
+        # Add rest of the treatments
+        if treatment:
+            current_treatments.append(treatment)
+
+
+# To save last disease after finishing all rows
+if current_disease is not None:
+    data.append({
+        "disease": current_disease,
+        "symptoms": "\n".join(current_symptoms),
+        "treatments": "\n".join(current_treatments)
+    })
+
+print(f"{len(data)} diseases loaded\n")
+
 
 
 
