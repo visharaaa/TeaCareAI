@@ -107,6 +107,27 @@ if current_disease is not None:
 
 print(f"{len(data)} diseases loaded\n")
 
+# Manually embedding the data
+documents = []
+embeddings = []
+metadatas = []
+ids = []
+
+for entry in data:
+    # Strong disease name for perfect matching
+    text_for_embedding = f"{entry["disease"]} {entry["disease"]} {entry["disease"]} - Treatments for {entry["disease"]}: {entry["treatments"]}"
+
+    documents.append(text_for_embedding)
+    embeddings.append(embedder.encode(text_for_embedding).tolist()) # Manual embedding
+
+    metadatas.append({
+        "disease": entry["disease"],
+        "treatments": entry["treatments"],
+        "symptoms": entry["symptoms"]
+    })
+
+    ids.append(entry["disease"].lower().replace(" ", "_"))
+
 
 
 
