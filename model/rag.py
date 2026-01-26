@@ -128,6 +128,80 @@ for entry in data:
 
     ids.append(entry["disease"].lower().replace(" ", "_"))
 
+# Chroma DB setup
+client = chromadb.PersistentClient(path = database_folder)
+collection = client.get_or_create_collection(name ="treatments_data")
+
+if collection.count() == 0:
+    collection.add(
+        documents = documents,
+        embeddings = embeddings, # Manually providing embeddings
+        metadatas = metadatas,
+        ids = ids
+    )
+    print("Data and embeddings added to the database successfully")
+else:
+    print("Database already has data")
+
+# Query setup
+query = "blister blight"
+
+print(f"Searching for '{query}'")
+print("Please wait...")
+
+# Embedding the query
+query_embedding = embedder.encode(query).tolist()
+
+# Search in the database
+results = collection.query(
+    query_embeddings = [query_embedding],
+    n_results = 1,
+    include = ["distances", "metadatas"] # Distance for confidence check
+)
+
+# Checking if found results
+if results["ids"] and results["ids"][0]:
+    # Get the top match
+    top_match = results["metadatas"][0][0]
+    distance = results["distances"][0][0] # Lowest distance gives better match
+
+    # Confidence threshold
+    if distance < 0.92:
+        disease_name = top_match["disease"]
+        symptoms = top_match["symptoms"]
+        treatments = top_match["treatments"]
+        confidence_percent = round((1 - distance) * 100, 1)
+
+        # outputting results
+        print(f"Match found: {disease_name}")
+        print(f"Confidence: {confidence_percent}%")
+        print("=" * 60)
+
+        print("You may wee symptoms like:")
+        print("-" * 50)
+        if symptoms.strip():
+            print(symptoms)
+        else:
+            print("No symptoms recorded")
+
+        print(f"\nRecommended treatments for the disease {disease_name}:")
+        print("-" * 50)
+        print(treatments)
+        print("\nNote: Always consult a local agricultural expert before applying treatments")
+    else:
+        # Not enough confidence (low confidence)
+        print("\nNo confident match found.")
+        print(f"\nMatching distance is too low = {distance:.3f}")
+        print("Available diseases:\n")
+        for entry in data:
+            print(f"{entry['disease']}")
+else:
+    # No match at all
+    print("No match found for the query")
+    print("Available diseases:")
+    for entry in data:
+        print(f"{entry['disease']}")
+
 
 
 
