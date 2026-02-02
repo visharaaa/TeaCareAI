@@ -5,7 +5,7 @@ import os
 import sys
 
 # Define paths
-treatments_file = "../data_folder/treatments_data.xlsx"
+treatments_file = "../data_folder/treatments_data_v2.xlsx"
 database_folder = "chroma_DB"
 
 # Print paths for debugging
@@ -39,9 +39,6 @@ print(f"Using treatments column: '{treatment_col}'")
 
 # Organizing data to embed
 data = []
-current_disease = None
-current_symptoms = []
-current_treatments = []
 
 # Loop through each row in the data frame
 for index, row in df.iterrows():
@@ -49,7 +46,13 @@ for index, row in df.iterrows():
     if pd.notna(row["Disease"]):
         disease = row["Disease"]
     else:
-        disease = None
+        disease = "Unknown disease"
+
+    # Check if the severity column has a value
+    if "Severity" in df.columns and pd.notna(row["Severity"]):
+        severity = row["Severity"]
+    else:
+        severity = "Unknown severity"
 
     # Check if the symptoms column has a value
     if pd.notna(row["Detailed Symptoms"]):
@@ -63,49 +66,15 @@ for index, row in df.iterrows():
     else:
         treatment = ""
 
-    # Checking if a new disease name is found
-    if disease:
-        # If already collecting data for previous disease
-        if current_disease is not None:
-            data.append({
-                "disease": current_disease,
-                "symptoms": "\n".join(current_symptoms),
-                "treatments": "\n".join(current_treatments)
-            })
-
-        # Start tracking the new disease
-        current_disease = disease
-
-        # Reset the symptom list
-        current_symptoms = []
-        if symptom:
-            current_symptoms.append(symptom)
-
-        # Reset the treatment list
-        current_treatments = []
-        if treatment:
-            current_treatments.append(treatment)
-
-    # If no new disease
-    else:
-        # Add rest of the symptoms
-        if symptom:
-            current_symptoms.append(symptom)
-
-        # Add rest of the treatments
-        if treatment:
-            current_treatments.append(treatment)
-
-
-# To save last disease after finishing all rows
-if current_disease is not None:
+    # Save row as a complete new entry
     data.append({
-        "disease": current_disease,
-        "symptoms": "\n".join(current_symptoms),
-        "treatments": "\n".join(current_treatments)
+        "disease": disease,
+        "severity": severity,
+        "symptoms": symptom,
+        "treatments": treatment
     })
 
-print(f"{len(data)} diseases loaded\n")
+print(f"{len(data)} rows loaded\n")
 
 # Manually embedding the data
 documents = []
@@ -114,19 +83,26 @@ metadatas = []
 ids = []
 
 for entry in data:
-    # Strong disease name for perfect matching
-    text_for_embedding = f"{entry["disease"]} {entry["disease"]} {entry["disease"]} - Treatments for {entry["disease"]}: {entry["treatments"]}"
+    # Strong disease name and severity for perfect matching
+    text_for_embedding = (
+        f"Severity level: {entry['severity']} {entry['severity']} {entry['severity']} {entry['severity']} {entry['severity']} "
+        f"High severity is critical, medium is moderate, low is mild - "
+        f"Current entry is {entry['severity']} severity for {entry['disease']} {entry['disease']} "
+        f"Symptoms: {entry['symptoms']} Treatments: {entry['treatments']}"
+    )
 
     documents.append(text_for_embedding)
     embeddings.append(embedder.encode(text_for_embedding).tolist()) # Manual embedding
 
     metadatas.append({
         "disease": entry["disease"],
-        "treatments": entry["treatments"],
-        "symptoms": entry["symptoms"]
+        "severity": entry["severity"],
+        "symptoms": entry["symptoms"],
+        "treatments": entry["treatments"]
     })
 
-    ids.append(entry["disease"].lower().replace(" ", "_"))
+    # Make ID unique per disease and severity
+    ids.append(f"{entry['disease'].lower().replace(' ', '_')}_{entry['severity'].lower().replace(' ', '_')}")
 
 # Chroma DB setup
 client = chromadb.PersistentClient(path = database_folder)
@@ -135,7 +111,7 @@ collection = client.get_or_create_collection(name ="treatments_data")
 if collection.count() == 0:
     collection.add(
         documents = documents,
-        embeddings = embeddings, # Manually providing embeddings
+        embeddings = embeddings, # Providing embeddings manually
         metadatas = metadatas,
         ids = ids
     )
@@ -144,7 +120,7 @@ else:
     print("Database already has data")
 
 # Query setup
-query = "blister blight"
+query = "blister blight high"
 
 print(f"Searching for '{query}'")
 print("Please wait...")
@@ -161,19 +137,20 @@ results = collection.query(
 
 # Checking if found results
 if results["ids"] and results["ids"][0]:
-    # Get the top match
-    top_match = results["metadatas"][0][0]
     distance = results["distances"][0][0] # Lowest distance gives better match
 
     # Confidence threshold
     if distance < 0.92:
-        disease_name = top_match["disease"]
-        symptoms = top_match["symptoms"]
-        treatments = top_match["treatments"]
+        match = results["metadatas"][0][0]
+        disease_name = match["disease"]
+        severity = match["severity"]
+        symptoms = match["symptoms"]
+        treatments = match["treatments"]
         confidence_percent = round((1 - distance) * 100, 1)
 
-        # outputting results
+        # Outputting results
         print(f"Match found: {disease_name}")
+        print(f"Severity level: {severity}")
         print(f"Confidence: {confidence_percent}%")
         print("=" * 60)
 
@@ -184,7 +161,7 @@ if results["ids"] and results["ids"][0]:
         else:
             print("No symptoms recorded")
 
-        print(f"\nRecommended treatments for the disease {disease_name}:")
+        print(f"\nRecommended treatments for {disease_name} ({severity} severity):")
         print("-" * 50)
         print(treatments)
         print("\nNote: Always consult a local agricultural expert before applying treatments")
