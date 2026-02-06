@@ -15,7 +15,8 @@ print("Excel file:", os.path.join(os.getcwd(), treatments_file))
 
 # Load the embedding model
 print("Loading the embedding model...")
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
+# embedder = SentenceTransformer('all-MiniLM-L6-v2')
+embedder = SentenceTransformer('BAAI/bge-small-en-v1.5')
 print("Embedding model loaded successfully")
 
 # Read the excel file
@@ -42,6 +43,10 @@ data = []
 
 # Loop through each row in the data frame
 for index, row in df.iterrows():
+    # Skip empty rows completely
+    if row.isna().all():
+        continue
+
     # Check if the disease column has a value
     if pd.notna(row["Disease"]):
         disease = row["Disease"]
@@ -120,7 +125,7 @@ else:
     print("Database already has data")
 
 # Query setup
-query = "blister blight high"
+query = "blister blight low"
 
 print(f"Searching for '{query}'")
 print("Please wait...")
@@ -140,7 +145,7 @@ if results["ids"] and results["ids"][0]:
     distance = results["distances"][0][0] # Lowest distance gives better match
 
     # Confidence threshold
-    if distance < 0.92:
+    if distance < 0.70:
         match = results["metadatas"][0][0]
         disease_name = match["disease"]
         severity = match["severity"]
