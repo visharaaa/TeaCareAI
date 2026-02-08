@@ -15,7 +15,8 @@ df = pd.read_excel('data/health_tracker_dataset.xlsx')
 df = pd.get_dummies(df, columns=['Disease_Type'])
 
 # Define input X and target y
-X = df.drop(columns=['Health_Improvement_Pct', 'Affected_Area_Post'])
+X = df.drop(columns=['Health_Improvement_Pct', 'Affected_Area_Post'], errors = 'ignore')
+X = X.select_dtypes(include=[np.number])
 y = df['Health_Improvement_Pct']
 
 #Split data into Training (80%) and Testing (20%)
@@ -37,8 +38,8 @@ model = Sequential([
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
 # Training
-print ("Training...")
-history = model.fit(X_train_scaled, y_train, epochs = 100, batch_size = 10, validation_split = 0.1)
+print(f"Training started with {X_train_scaled.shape[1]} features (including Days)...")
+history = model.fit(X_train_scaled, y_train, epochs=100, batch_size=10, validation_split=0.1)
 
 model.save ('tea_health_model.h5')
 print("Training complete! Model has been saved as tea_health_model.h5")
