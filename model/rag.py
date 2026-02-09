@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import os
 import sys
+import ollama
 
 # Define paths
 treatments_file = "../data_folder/treatments_data_v2.xlsx"
@@ -153,6 +154,33 @@ if results["ids"] and results["ids"][0]:
         treatments = match["treatments"]
         confidence_percent = round((1 - distance) * 100, 1)
 
+        # Ollama response
+        llm_prompt = f"""
+        You are a helpful tea disease assistant in Sri Lanka.
+        Only use the provided information below. Do not add, invent, or assume any facts.
+
+        Retrieved data:
+        Disease: {disease_name}
+        Severity: {severity}
+        Symptoms: {symptoms}
+        Treatments: {treatments}
+
+        Give a friendly, simple response in English.
+        - Explain symptoms in easy words in point form
+        - List and explain treatments in bullet points
+        - Add 2-3 practical tips for local farmers
+        - Keep short (150-250 words)
+        - End with safety note
+        """
+
+        # Call Ollama (llama3.1:8b model)
+        ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [{
+            'role': 'user',
+            'content': llm_prompt,
+        }])
+
+        final_response = ollama_response['message']['content'].strip()
+
         # Outputting results
         print(f"Match found: {disease_name}")
         print(f"Severity level: {severity}")
@@ -170,6 +198,12 @@ if results["ids"] and results["ids"][0]:
         print("-" * 50)
         print(treatments)
         print("\nNote: Always consult a local agricultural expert before applying treatments")
+
+        # Ollama response
+        print("\nOllama output:")
+        print("-" * 50)
+        print("\n" + final_response)
+
     else:
         # Not enough confidence (low confidence)
         print("\nNo confident match found.")
