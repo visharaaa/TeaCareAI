@@ -4,6 +4,7 @@ import chromadb
 import os
 import sys
 import ollama
+import json
 
 # Define paths
 treatments_file = "../data_folder/treatments_data_v2.xlsx"
@@ -125,10 +126,34 @@ if collection.count() == 0:
 else:
     print("Database already has data")
 
-# Query setup
-query = "blister blight low"
+# Query setup with JSON
+json_file = "../data_folder/input.json"
+try:
+    with open(json_file, 'r', encoding = 'utf-8') as f:
+        input_data = json.load(f)
 
-print(f"Searching for '{query}'")
+    disease_name = input_data.get("disease_name", "").strip().lower()
+    severity_level = input_data.get("severity_level", "").strip().lower()
+    location = input_data.get("location", "Sri Lanka").strip()
+
+    if not disease_name or not severity_level:
+        print("Error: Missing 'disease_name' or 'severity_level' in JSON.")
+        sys.exit()
+
+    # Create the query from JSON
+    query = f"{disease_name} {severity_level}"
+
+except FileNotFoundError:
+    print(f"Error: JSON file not found at {json_file}")
+    sys.exit()
+except json.JSONDecodeError:
+    print("Error: Invalid JSON format.")
+    sys.exit()
+except Exception as e:
+    print(f"Error while reading JSON: {e}")
+    sys.exit()
+
+print(f"Searching for '{query}' (location: {location})")
 print("Please wait...")
 
 # Embedding the query
@@ -156,7 +181,7 @@ if results["ids"] and results["ids"][0]:
 
         # Ollama response
         llm_prompt = f"""
-        You are a helpful tea disease assistant in Sri Lanka.
+        You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response since the user lives there.
         Only use the provided information below. Do not add, invent, or assume any facts.
 
         Retrieved data:
