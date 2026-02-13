@@ -159,12 +159,28 @@ print("Please wait...")
 # Embedding the query
 query_embedding = embedder.encode(query).tolist()
 
-# Search in the database
-results = collection.query(
+# Find exact severity match
+severity_cap = severity_level.capitalize()
+
+filtered_results = collection.query(
     query_embeddings = [query_embedding],
     n_results = 1,
-    include = ["distances", "metadatas"] # Distance for confidence check
+    where = { "severity": severity_cap}, # To get the exact severity
+    include = ["distances", "metadatas"]
 )
+
+# Use filtered if found otherwise fallback to unfiltered
+if filtered_results["ids"] and filtered_results["ids"][0]:
+    results = filtered_results
+    print(f"Found exact severity match: {severity_cap}")
+else:
+    print(f"No exact {severity_cap} match... falling back to best overall match")
+    # Search in the database
+    results = collection.query(
+        query_embeddings = [query_embedding],
+        n_results = 1,
+        include = ["distances", "metadatas"] # Distance for confidence check
+    )
 
 # Checking if found results
 if results["ids"] and results["ids"][0]:
