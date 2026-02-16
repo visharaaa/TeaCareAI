@@ -5,6 +5,8 @@ import os
 import sys
 import ollama
 import json
+from datetime import datetime
+import csv
 
 # Define paths
 treatments_file = "../data_folder/treatments_data_v2.xlsx"
@@ -184,74 +186,86 @@ else:
 
 # Checking if found results
 if results["ids"] and results["ids"][0]:
-    distance = results["distances"][0][0] # Lowest distance gives better match
+    print(f"Found {len(results['ids'][0])} possible matches:")
+    print("=" * 60)
 
-    # Confidence threshold
-    if distance < 0.70:
-        match = results["metadatas"][0][0]
-        disease_name = match["disease"]
-        severity = match["severity"]
-        symptoms = match["symptoms"]
-        treatments = match["treatments"]
-        confidence_percent = round((1 - distance) * 100, 1)
+    best_match = None
+    best_index = 0
 
-        # Ollama response
-        llm_prompt = f"""
-        You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response since the user lives there.
-        Only use the provided information below. Do not add, invent, or assume any facts.
+    # Prefer the one where severity matches user request
+    for i in range(len(results["ids"][0])):
+        distance = results["distances"][0][i] # Lowest distance gives better match
+        match = results["metadatas"][0][i]
+        confidence = round((1 - distance) * 100, 1)
+        print(f"Match {i + 1}: {match['disease']} ({match['severity']}) - Confidence: {confidence}%")
 
-        Retrieved data:
-        Disease: {disease_name}
-        Severity: {severity}
-        Symptoms: {symptoms}
-        Treatments: {treatments}
+        # Boost if severity matches user input
+        if severity_level.lower() in match["severity"].lower():
+            best_match = match
+            best_index = i
+            break
 
-        Give a friendly, simple response in English.
-        - Explain symptoms in easy words in point form
-        - List and explain treatments in bullet points
-        - Add 2-3 practical tips for local farmers
-        - Keep short (150-250 words)
-        - End with safety note
-        """
+    # Fallback to the best match if no severity match
+    if not best_match:
+        best_match = results["metadatas"][0][0]
+        best_index = 0
 
-        # Call Ollama (llama3.1:8b model)
-        ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [{
-            'role': 'user',
-            'content': llm_prompt,
-        }])
+    disease_name = best_match["disease"]
+    severity = best_match["severity"]
+    symptoms = best_match["symptoms"]
+    treatments = best_match["treatments"]
+    confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
 
-        final_response = ollama_response['message']['content'].strip()
+    # Ollama response
+    llm_prompt = f"""
+    You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response since the user lives there.
+    Only use the provided information below. Do not add, invent, or assume any facts.
 
-        # Outputting results
-        print(f"Match found: {disease_name}")
-        print(f"Severity level: {severity}")
-        print(f"Confidence: {confidence_percent}%")
-        print("=" * 60)
+    Retrieved data:
+    Disease: {disease_name}
+    Severity: {severity}
+    Symptoms: {symptoms}
+    Treatments: {treatments}
 
-        print("You may wee symptoms like:")
-        print("-" * 50)
-        if symptoms.strip():
-            print(symptoms)
-        else:
-            print("No symptoms recorded")
+    Give a friendly, simple response in English.
+    - Explain symptoms in easy words in point form
+    - List and explain treatments in bullet points
+    - Add 2-3 practical tips for local farmers
+    - Keep short (150-250 words)
+    - End with safety note
+    """
 
-        print(f"\nRecommended treatments for {disease_name} ({severity} severity):")
-        print("-" * 50)
-        print(treatments)
-        print("\nNote: Always consult a local agricultural expert before applying treatments")
+    # Call Ollama (llama3.1:8b model)
+    ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [{
+        'role': 'user',
+        'content': llm_prompt,
+    }])
 
-        # Ollama response
-        print("\nOllama output:")
-        print("-" * 50)
-        print("\n" + final_response)
+    final_response = ollama_response['message']['content'].strip()
 
+    # Outputting results
+    print(f"Best match: {disease_name}")
+    print(f"Severity level: {severity}")
+    print(f"Confidence: {confidence_percent}%")
+    print("=" * 60)
+
+    print("You may wee symptoms like:")
+    print("-" * 50)
+    if symptoms.strip():
+        print(symptoms)
     else:
-        # Not enough confidence (low confidence)
-        print("\nNo confident match found.")
-        print(f"\nMatching distance is too low = {distance:.3f}")
-        print("Available diseases:\n")
-        for entry in data:
-            print(f"{entry['disease']}")
+        print("No symptoms recorded")
+
+    print(f"\nRecommended treatments for {disease_name} ({severity} severity):")
+    print("-" * 50)
+    print(treatments)
+    print("\nNote: Always consult a local agricultural expert before applying treatments")
+
+    # Ollama response
+    print("\nOllama output:")
+    print("-" * 50)
+    print("\n" + final_response)
+
 else:
     # No match at all
     print("No match found for the query")
