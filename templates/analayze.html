@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Plant - EcoGuard</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/header.css">
+    <link rel="stylesheet" href="../static/css/analyze.css">
+</head>
+
+<body>
+    <header>
+        <img src="../static/icons/logo.png">
+        <div class="header-buttons">
+            <button class="not-actived" onclick="window.location.href='index.html'">Home</button>
+            <button id="actived">Analyze</button>
+            <button class="not-actived" onclick="window.location.href='about.html'">About us</button>
+            <button class="not-actived" onclick="window.location.href='login.html'">Login</button>
+        </div>
+    </header>
+
+    <div class="analyze-container">
+        <div class="upload-section">
+            <div class="upload-box" id="drop-zone">
+                <img src="../static/icons/green-upload.png" alt="Upload" class="upload-icon">
+                <h3>Drag & Drop or Click to Upload</h3>
+                <p>Supports: JPG, PNG, JPEG</p>
+                <input type="file" id="file-input" hidden>
+            </div>
+            <button class="scan-btn" id="scan-button">Start Analysis</button>
+        </div>
+
+        <div class="result-section">
+            <div class="result-card">
+                <div class="image-preview" id="image-preview-box">
+                    <p>No Image Selected</p>
+                    <img id="preview-img" src="" style="display: none;">
+                </div>
+                <div class="result-details">
+                    <h3>Analysis Result</h3>
+                    <div class="detail-row">
+                        <span class="label">Status:</span>
+                        <span class="value healthy" id="status-text">Waiting...</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Confidence:</span>
+                        <span class="value" id="confidence-text">--%</span>
+                    </div>
+                    <div class="treatment-box">
+                        <h4>Recommended Treatment</h4>
+                        <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/script.js"></script>
+</body>
+
+</html>
