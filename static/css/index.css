@@ -1,0 +1,232 @@
+.middle-section {
+    flex: 1;
+    margin: 70px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.middle-section .heading,
+.middle-section .description {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    color: rgb(24, 57, 14);
+}
+
+.middle-section .heading {
+    font-size: 50px;
+    font-weight: 700;
+    margin: 10px;
+}
+
+.middle-section .description {
+    font-weight: 500;
+    color: #2c8146;
+    font-size: 23px;
+}
+
+.steps {
+    width: fit-content;
+    display: flex;
+    margin: 20px 5px;
+}
+
+.step {
+    position: relative;
+    flex: 1;
+    max-width: 350px;
+    aspect-ratio: 1/0.9;
+    border: 2px solid #157f3c;
+    background-color: white;
+    border-radius: 10px;
+    padding: 40px 30px 30px 30px;
+    margin: 15px;
+}
+
+.step .image-background {
+    width: 70px;
+    aspect-ratio: 1/1;
+    background-color: #dbf0e3;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.step .image-background img {
+    width: 75%;
+}
+
+.step .title {
+    font-size: 25px;
+    font-weight: 600;
+    margin: 20px 0;
+}
+
+.step .sub-title {
+    color: rgb(70, 70, 70);
+    font-size: 18px;
+}
+
+.step .number-icon {
+    position: absolute;
+    top: -20px;
+    width: 35px;
+    aspect-ratio: 1/1;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    background-color: #157f3c;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.third-section {
+    flex: 1;
+    margin: 70px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.third-section .heading,
+.third-section .description {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    color: rgb(24, 57, 14);
+}
+
+.third-section .heading {
+    font-size: 50px;
+    font-weight: 700;
+    margin: 10px;
+}
+
+.third-section .description {
+    font-weight: 500;
+    color: #2c8146;
+    font-size: 23px;
+}
+
+.cards {
+    flex: 1;
+    margin: 20px 5px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.card {
+    background-color: white;
+    margin: 15px;
+    border-radius: 10px;
+    border: 2px solid #157f3c;
+    padding: 30px;
+}
+
+.card .image-background {
+    width: 70px;
+    aspect-ratio: 1/1;
+    background-color: #dbf0e3;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card .image-background img {
+    width: 75%;
+}
+
+.card .title {
+    font-size: 25px;
+    font-weight: 600;
+    margin: 20px 0;
+}
+
+.card .sub-title {
+    color: rgb(70, 70, 70);
+    font-size: 18px;
+}
+
+.system-quality-div {
+    flex: 1;
+    height: 30%;
+    max-height: 200px;
+    background-color: #258849;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    margin-bottom: 100px;
+}
+
+.system-quality-div .main-title {
+    font-size: 40px;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+}
+
+.system-quality-div .sub-title {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    font-weight: 200;
+    text-align: center;
+}
+
+.accessing-div-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.accessing-div {
+    width: 70%;
+    min-width: fit-content;
+    margin: 20px;
+    border: 2px solid #258849;
+    background-color: #b2d8c0;
+    border-radius: 10px;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.accessing-div .heading {
+    color: #1b3222;
+    font-size: 50px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.accessing-div .sub-heading {
+    color: #258849;
+    font-size: 22px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.accessing-div button {
+    background-color: #157f3c;
+    height: 50px;
+    width: 250px;
+    border-radius: 10px;
+    border: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 550;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.accessing-div button img {
+    width: 20px;
+}

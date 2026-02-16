@@ -1,0 +1,55 @@
+header {
+    position: fixed;
+    width: 100%;
+    height: 70px;
+    z-index: 1000;
+    background-color: rgb(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: flex-start;
+}
+
+header img {
+    width: 75px;
+}
+
+.header-buttons {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+header button {
+    width: 130px;
+    height: 40px;
+    font-size: 20px;
+    background-color: transparent;
+    border: none;
+    font-weight: 700;
+    margin: 0 10px;
+}
+
+.not-actived {
+    position: relative;
+}
+
+.not-actived::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background-color: #157f3c;
+    width: 0;
+    height: 2px;
+    transition: width 0.3s ease;
+}
+
+.not-actived:hover::after,
+.not-actived.active::after {
+    width: 100%;
+}
+
+#actived {
+    border-bottom: 2px solid #157f3c;
+}
