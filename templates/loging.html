@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login - EcoGuard</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/header.css">
+    <link rel="stylesheet" href="../static/css/login.css">
+</head>
+
+<body>
+    <header>
+        <img src="../static/icons/logo.png">
+        <div class="header-buttons">
+            <button class="not-actived" onclick="window.location.href='index.html'">Home</button>
+            <button class="not-actived" onclick="window.location.href='analyze.html'">Analyze</button>
+            <button class="not-actived" onclick="window.location.href='about.html'">About us</button>
+            <button id="actived">Login</button>
+        </div>
+    </header>
+
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Welcome Back</h2>
+            <p>Login to access your Plant Recovery Tracker</p>
+
+            <form>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="farmer@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="••••••••">
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+            <p class="footer-text">Don't have an account? <span>Sign Up</span></p>
+        </div>
+    </div>
+</body>
+
+</html>
