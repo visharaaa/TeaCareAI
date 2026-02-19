@@ -161,7 +161,7 @@ print("Please wait...")
 # Embedding the query
 query_embedding = embedder.encode(query).tolist()
 
-# Find exact severity match
+# Find an exact severity match
 severity_cap = severity_level.capitalize()
 
 filtered_results = collection.query(
@@ -265,6 +265,20 @@ if results["ids"] and results["ids"][0]:
     print("\nOllama output:")
     print("-" * 50)
     print("\n" + final_response)
+
+    # Logging the information
+    log_file = "rag_log.csv"
+    headers = ["Query", "Location", "Matched Disease", "Matched Severity", "Confidence (%)", "LLM Response", "Timestamp"]
+
+    file_exists = os.path.isfile(log_file)
+
+    with open(log_file, "a", newline = "", encoding = "utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists or os.stat(log_file).st_size == 0:
+            writer.writerow(headers)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        writer.writerow([query, location, disease_name, severity, confidence_percent, final_response, timestamp])
+    print(f"Information logged to {log_file}")
 
 else:
     # No match at all
