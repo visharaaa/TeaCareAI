@@ -266,6 +266,27 @@ if results["ids"] and results["ids"][0]:
     print("-" * 50)
     print("\n" + final_response)
 
+    # JSON output file
+    output_json = {
+        "query": query,
+        "location": location,
+        "matched_disease": disease_name,
+        "matched_severity": severity,
+        "confidence_percent": confidence_percent,
+        "symptoms": symptoms.strip() if symptoms.strip() else "No symptoms recorded",
+        "treatments": treatments,
+        "llm_response": final_response,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "success"
+    }
+
+    # Save to JSON file
+    json_output_file = "output.json"
+    with open(json_output_file, "w", encoding = "utf-8") as f:
+        json.dump(output_json, f, indent = 4, ensure_ascii = False)
+
+    print(f"JSON output saved to {json_output_file}")
+
     # Logging the information
     log_file = "rag_log.csv"
     headers = ["Query", "Location", "Matched Disease", "Matched Severity", "Confidence (%)", "LLM Response", "Timestamp"]
