@@ -285,7 +285,7 @@ if results["ids"] and results["ids"][0]:
     with open(json_output_file, "w", encoding = "utf-8") as f:
         json.dump(output_json, f, indent = 4, ensure_ascii = False)
 
-    print(f"JSON output saved to {json_output_file}")
+    print(f"\nJSON output saved to {json_output_file}")
 
     # Logging the information
     log_file = "rag_log.csv"
@@ -307,8 +307,4 @@ else:
     print("Available diseases:")
     for entry in data:
         print(f"{entry['disease']}")
-
-
-
-
 
