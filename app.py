@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request,jsonify
-from isort import file
+from tea_disease_identifier import predict
+import os
+
 
 app = Flask(__name__)
 
@@ -23,6 +25,14 @@ def analayze():
             return jsonify({'error': 'No file selected for uploading'}), 400
         
         if image_file:
+            # 3. Save the uploaded file to the server
+            upload_folder = './uploaded images'
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            file_path = os.path.join(upload_folder, image_file.filename)
+            image_file.save(file_path)
+            results = predict(image_file.filename)
+
             #model take controll from here and process the image, then return the result to the frontend
             return jsonify({
                 'status': 'Disease Detected: Powdery Mildew',
