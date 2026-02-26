@@ -14,7 +14,7 @@
                 <img src="{{url_for('static',filename='icons/green-upload.png')}}" alt="Upload" class="upload-icon">
                 <h3>Drag & Drop or Click to Upload</h3>
                 <p>Supports: JPG, PNG, JPEG</p>
-                <input type="file" id="file-input" hidden>
+                <input type="file" id="file-input" hidden accept="image/JPG, image/png, image/jpeg">
             </div>
             <button class="scan-btn" id="scan-button">Start Analysis</button>
         </div>
@@ -43,4 +43,8 @@
             </div>
         </div>
     </div>
+{% endblock %}
+{% block extra_js %}
+    <script src="{{url_for('static',filename='js/analyze.js')}}"></script>
+    <script src="{{url_for('static',filename='js/image_uploader.js')}}"></script>
 {% endblock %}

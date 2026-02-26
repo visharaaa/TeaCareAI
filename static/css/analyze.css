@@ -24,11 +24,17 @@
     align-items: center;
     background-color: white;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease
 }
 
 .upload-box:hover {
     background-color: #e8f5e9;
+}
+
+.upload-box.drag-active {
+    border: 2px dashed #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+    transform: scale(1.02);
 }
 
 .upload-icon {
