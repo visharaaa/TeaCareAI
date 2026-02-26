@@ -1,29 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="../static/css/style.css">
-    <link rel="stylesheet" href="../static/css/index.css">
-    <link rel="stylesheet" href="../static/css/header.css">
-    <link rel="stylesheet" href="../static/css/hero.css">
-</head>
+{% block title %}Home - PlantCare AI{% endblock %}
 
-<body>
-    <header>
-        <img src="../static/icons/logo.png">
-        <div class="header-buttons">
-            <button id="actived">Home</button>
-            <button class="not-actived" onclick="window.location.href='./analayze.html'">Analyze</button>
-            <button class="not-actived" onclick="window.location.href='./about.html'">About us</button>
-            <button class="not-actived" onclick="window.location.href='./login.html'">Login</button>
+{% block extra_css %}
+    <link rel="stylesheet" href="{{url_for('static',filename='css/hero.css')}}">
+{% endblock %}
 
-        </div>
-    </header>
+{% block content %}
     <div class="hero-section-background">
-        <img src="../static/icons/background-image.jpg">
+        <img src="{{url_for('static',filename='icons/background-image.jpg')}}">
     </div>
     <div class="hero-section">
         <div class="heading-section">
@@ -39,12 +24,12 @@
             </div>
         </div>
         <div class="hero-seaction-buttons">
-            <button id="analayze-button" onclick="window.location.href='../templates/analayze.html'"><img
-                    src="../static/icons/upload.png">
+            <button id="analayze-button" onclick="window.location.href='{{ url_for('analayze') }}'">
+                <img src="{{url_for('static',filename='icons/upload.png')}}">
                 <pre> </pre>Analayze Your Plant
             </button>
-            <button id="about-us" onclick="window.location.href='../templates/about.html'">About Us
-                <pre> </pre> <img src="../static/icons/next.png">
+            <button id="about-us" onclick="window.location.href='{{url_for('about')}}'">About Us
+                <pre> </pre> <img src="{{url_for('static',filename='icons/next.png')}}">
             </button>
         </div>
         <div class="hero-footer">
@@ -59,7 +44,7 @@
         <div class="steps">
             <div class="step">
                 <div class="image-background">
-                    <img src="../static/icons/green-upload.png">
+                    <img src="{{url_for('static',filename='icons/green-upload.png')}}">
                 </div>
                 <p class="title">Upload Photo</p>
                 <p class="sub-title">Take or upload a clear photo of the affected plant leaf or area</p>
@@ -69,7 +54,7 @@
             </div>
             <div class="step">
                 <div class="image-background">
-                    <img src="../static /icons/ai.png">
+                    <img src="{{url_for('static',filename='icons/ai.png')}}">
                 </div>
                 <p class="title">AI Analysis</p>
                 <p class="sub-title">Our advanced AI analyzes the image and compares it against thousands of disease
@@ -80,7 +65,7 @@
             </div>
             <div class="step">
                 <div class="image-background">
-                    <img src="../static/icons/clipboard.png">
+                    <img src="{{url_for('static',filename='icons/clipboard.png')}}">
                 </div>
                 <p class="title">Get Results</p>
                 <p class="sub-title">Receive instant diagnosis with detailed information and treatment recommendations
@@ -97,7 +82,7 @@
         <div class="cards">
             <div class="card">
                 <div class="image-background">
-                    <img src="../static/icons/artificial-intelligence.png">
+                    <img src="{{url_for('static',filename='icons/artificial-intelligence.png')}}">
                 </div>
                 <p class="title">Advanced AI Technology</p>
                 <p class="sub-title">Powered by cutting-edge machine learning models trained on millions of plant
@@ -105,28 +90,28 @@
             </div>
             <div class="card">
                 <div class="image-background">
-                    <img src="../static/icons/clock.png">
+                    <img src="{{url_for('static',filename='icons/clock.png')}}">
                 </div>
                 <p class="title">Instant Results</p>
                 <p class="sub-title">Get accurate disease diagnosis in seconds, not days or weeks</p>
             </div>
             <div class="card">
                 <div class="image-background">
-                    <img src="../static/icons/accuracy.png">
+                    <img src="{{url_for('static',filename='icons/accuracy.png')}}">
                 </div>
                 <p class="title">99% Accuracy Rate</p>
                 <p class="sub-title">Industry-leading accuracy backed by continuous model improvements</p>
             </div>
             <div class="card">
                 <div class="image-background">
-                    <img src="../static/icons/check-list.png">
+                    <img src="{{url_for('static',filename='icons/check-list.png')}}">
                 </div>
                 <p class="title">Treatment Plans</p>
                 <p class="sub-title">Receive actionable recommendations and prevention strategies</p>
             </div>
             <div class="card">
                 <div class="image-background">
-                    <img src="../static/icons/database.png">
+                    <img src="{{url_for('static',filename='icons/database.png')}}">
                 </div>
                 <p class="title">History Tracking</p>
                 <p class="sub-title">Monitor your plants over time and track treatment effectiveness</p>
@@ -151,12 +136,10 @@
         <div class="accessing-div">
             <p class="heading">Ready to Protect Your Plants?</p>
             <p class="sub-heading">Join thousands of farmers and gardeners using AI to maintain healthy plants</p>
-            <button onclick="window.location.href='../templates/analayze.html'">Start Free Analysis
-                <pre> </pre><img src="../static/icons/next-white.png">
+            <button onclick="window.location.href='{{url_for('analayze')}}'">Start Free Analysis
+                <pre> </pre><img src="{{url_for('static',filename='icons/next-white.png')}}">
             </button>
         </div>
     </div>
 
-</body>
-
-</html>
+{% endblock %}
