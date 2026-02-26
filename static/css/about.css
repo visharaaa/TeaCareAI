@@ -1,0 +1,65 @@
+.about-hero {
+    margin-top: 0px;
+    padding: 80px 20px;
+    text-align: center;
+    background-color: #e8f5e9;
+}
+
+.about-hero h1 {
+    color: #157f3c;
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.about-hero p {
+    color: #555;
+    font-size: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.team-section {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.team-grid {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.member-card {
+    border: 2px solid #157f3c;
+    border-radius: 15px;
+    padding: 30px;
+    width: 250px;
+    transition: transform 0.3s;
+}
+
+.member-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(21, 127, 60, 0.2);
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #157f3c;
+    color: white;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.role {
+    color: #157f3c;
+    font-weight: 600;
+    margin: 10px 0;
+}

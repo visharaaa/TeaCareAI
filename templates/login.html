@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{url_for('static',filename='css/login.css')}}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Welcome Back</h2>
+            <p>Login to access your Plant Recovery Tracker</p>
+
+            <form>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="farmer@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="••••••••">
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+            <p class="footer-text">Don't have an account? <span>Sign Up</span></p>
+        </div>
+    </div>
+{% endblock %}

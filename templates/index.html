@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - PlantCare AI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{url_for('static',filename='css/hero.css')}}">
+{% endblock %}
+
+{% block content %}
+    <div class="hero-section-background">
+        <img src="{{url_for('static',filename='icons/background-image.jpg')}}">
+    </div>
+    <div class="hero-section">
+        <div class="heading-section">
+            <p>&#x2022; AI - Powered Plant Health Analaysis</p>
+        </div>
+        <div>
+            <div class="main-heading">
+                <p>Protect Yout Plants With <br><span>Instant disease Detection</span></span></p>
+            </div>
+            <div class="description">
+                <p>Upload a photo and let our advanced AI analyze plant health in <br>seconds. Get accurate diagnoses
+                    and treatment <br>recommendations instantly.</p>
+            </div>
+        </div>
+        <div class="hero-seaction-buttons">
+            <button id="analayze-button" onclick="window.location.href='{{ url_for('analayze') }}'">
+                <img src="{{url_for('static',filename='icons/upload.png')}}">
+                <pre> </pre>Analayze Your Plant
+            </button>
+            <button id="about-us" onclick="window.location.href='{{url_for('about')}}'">About Us
+                <pre> </pre> <img src="{{url_for('static',filename='icons/next.png')}}">
+            </button>
+        </div>
+        <div class="hero-footer">
+            <p>99% Accuracy</p>
+            <p>Instant Results</p>
+            <p>Base on Sri Lanka</p>
+        </div>
+    </div>
+    <div class="middle-section">
+        <p class="heading">How It Works</p>
+        <p class="description">Get accurate plant disease diagnosis in three simple steps</p>
+        <div class="steps">
+            <div class="step">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/green-upload.png')}}">
+                </div>
+                <p class="title">Upload Photo</p>
+                <p class="sub-title">Take or upload a clear photo of the affected plant leaf or area</p>
+                <div class="number-icon">
+                    <p>1</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/ai.png')}}">
+                </div>
+                <p class="title">AI Analysis</p>
+                <p class="sub-title">Our advanced AI analyzes the image and compares it against thousands of disease
+                    patterns</p>
+                <div class="number-icon">
+                    <p>2</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/clipboard.png')}}">
+                </div>
+                <p class="title">Get Results</p>
+                <p class="sub-title">Receive instant diagnosis with detailed information and treatment recommendations
+                </p>
+                <div class="number-icon">
+                    <p>3</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="third-section">
+        <p class="heading">Why Choose PlantCare AI</p>
+        <p class="description">Professional-grade plant disease detection at your fingertips</p>
+        <div class="cards">
+            <div class="card">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/artificial-intelligence.png')}}">
+                </div>
+                <p class="title">Advanced AI Technology</p>
+                <p class="sub-title">Powered by cutting-edge machine learning models trained on millions of plant
+                    disease images</p>
+            </div>
+            <div class="card">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/clock.png')}}">
+                </div>
+                <p class="title">Instant Results</p>
+                <p class="sub-title">Get accurate disease diagnosis in seconds, not days or weeks</p>
+            </div>
+            <div class="card">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/accuracy.png')}}">
+                </div>
+                <p class="title">99% Accuracy Rate</p>
+                <p class="sub-title">Industry-leading accuracy backed by continuous model improvements</p>
+            </div>
+            <div class="card">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/check-list.png')}}">
+                </div>
+                <p class="title">Treatment Plans</p>
+                <p class="sub-title">Receive actionable recommendations and prevention strategies</p>
+            </div>
+            <div class="card">
+                <div class="image-background">
+                    <img src="{{url_for('static',filename='icons/database.png')}}">
+                </div>
+                <p class="title">History Tracking</p>
+                <p class="sub-title">Monitor your plants over time and track treatment effectiveness</p>
+            </div>
+        </div>
+    </div>
+    <div class="system-quality-div">
+        <div>
+            <p class="main-title">1M+</p>
+            <p class="sub-title">Plants Analyzed</p>
+        </div>
+        <div>
+            <p class="main-title">99%</p>
+            <p class="sub-title">Accuracy Rate</p>
+        </div>
+        <div>
+            <p class="main-title">24/7</p>
+            <p class="sub-title">Available</p>
+        </div>
+    </div>
+    <div class="accessing-div-container">
+        <div class="accessing-div">
+            <p class="heading">Ready to Protect Your Plants?</p>
+            <p class="sub-heading">Join thousands of farmers and gardeners using AI to maintain healthy plants</p>
+            <button onclick="window.location.href='{{url_for('analayze')}}'">Start Free Analysis
+                <pre> </pre><img src="{{url_for('static',filename='icons/next-white.png')}}">
+            </button>
+        </div>
+    </div>
+
+{% endblock %}

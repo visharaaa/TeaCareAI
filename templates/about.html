@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}About Us{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{url_for('static',filename='css/about.css')}}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="about-hero">
+        <h1>Our Mission</h1>
+        <p>Empowering farmers with AI technology to ensure sustainable agriculture and healthier crops for everyone.</p>
+    </div>
+
+    <div class="team-section">
+        <h2>Meet the Team</h2>
+        <div class="team-grid">
+            <div class="member-card">
+                <div class="avatar">M3</div>
+                <h3>Vishara (Group Leader)</h3>
+                <p class="role">Recovery Tracker</p>
+                <p class="desc">Developing the plant health monitoring.</p>
+            </div>
+            <div class="member-card">
+                <div class="avatar">S</div>
+                <h3>Sharuna</h3>
+                <p class="role">AI & Disease Detection</p>
+                <p class="desc">Specializing in YOLOv8 model training and impliments database, UI and system
+                    integration.</p>
+            </div>
+            <div class="member-card">
+                <div class="avatar">M2</div>
+                <h3>Thaveesha</h3>
+                <p class="role">Treatment Logic</p>
+                <p class="desc">Focusing on agricultural research and treatment algorithms.</p>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
