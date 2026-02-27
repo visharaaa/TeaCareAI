@@ -57,6 +57,17 @@ def predict(img):
 
     return pixel_count_arr
 
+def claculate_infection_percentage(pixel_count_arr):
+    total_pixels = pixel_count_arr.sum()
+    if total_pixels == 0:
+        return 0
+    pixel_count_arr[0]=0 #to ignore the healthy area
+    pixel_count=pixel_count_arr.sum()
+    infection_percentages = (pixel_count / total_pixels) * 100
+    return infection_percentages
+
+
+
 
 
 model = YOLO("best.pt") 
