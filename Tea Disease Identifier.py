@@ -52,12 +52,16 @@ def predict(img):
             pixel_count_arr+=pixel_adder(class_id,count_pixels(raw_mask_numpy))
 
             #cv2.imshow(f"Infected Area Mask {names[class_id]}", raw_mask_numpy * 255) # Multiply by 255 to visualize the mask
-            #cv2.waitKey(0)
-            #cv2.destroyAllWindows()
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
     return pixel_count_arr
 
+#params=> pixel count array of each class
+#this function calculates the percentage of infection for each class based on the pixel counts. 
+#It first calculates the total number of pixels by summing the pixel counts. If the total is zero, it returns 0 to avoid division by zero.
 def claculate_infection_percentage(pixel_count_arr):
+    #print(pixel_count_arr)
     total_pixels = pixel_count_arr.sum()
     if total_pixels == 0:
         return 0
@@ -73,7 +77,8 @@ def claculate_infection_percentage(pixel_count_arr):
 model = YOLO("best.pt") 
 names = model.names #names is a list of class names corresponding to the class IDs used in the model.
 
-print(predict('Blister_Blight_dt3_00119.jpg'))
+#print(predict('Blister_Blight_dt3_00119.jpg'))
+print(claculate_infection_percentage(predict('Blister_Blight_dt3_00119.jpg')))
 #print(predict('Blister_Blight_dt3_00132.jpg'))
 
 
