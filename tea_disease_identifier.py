@@ -68,7 +68,7 @@ def claculate_infection_percentage(pixel_count_arr):
     pixel_count_arr[0]=0 #to ignore the healthy area
     pixel_count=pixel_count_arr.sum()
     infection_percentages = (pixel_count / total_pixels) * 100
-    print('infection_percentages', infection_percentages)
+    #print('infection_percentages', infection_percentages)
     return np.round(infection_percentages,2)
 
 #params=> pixel count array of each class as numpy array
@@ -90,6 +90,16 @@ def get_disease(img):
     # print('infection_percentage', infection_percentage)
     return disease_name, float(infection_percentage)
 
+#params=> infection percentage
+#this function categorizes the severity of the infection based on the percentage of infection.
+def severity_level(infection_percentage):
+    if infection_percentage >= 75:
+        return "High"
+    elif infection_percentage >= 25:
+        return "Medium"
+    else:
+        return "Low"
+
 
 
 
@@ -98,5 +108,5 @@ model = YOLO("best.pt")
 names = model.names #names is a list of class names corresponding to the class IDs used in the model.
 
 #print(predict('Blister_Blight_dt3_00119.jpg'))
-print(claculate_infection_percentage(predict('Blister_Blight_dt3_00201.jpg')))
+#print(claculate_infection_percentage(predict('Blister_Blight_dt3_00201.jpg')))
 #print(predict('Blister_Blight_dt3_00132.jpg'))
