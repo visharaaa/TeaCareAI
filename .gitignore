@@ -2,5 +2,6 @@
 test_images/
 runs/
 __pycache__/
-uploaded images/
+uploaded_images/
 chroma_DB/
+.idea/

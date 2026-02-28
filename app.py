@@ -26,7 +26,7 @@ def analayze():
         
         if image_file:
             # 3. Save the uploaded file to the server
-            upload_folder = './uploaded images'
+            upload_folder = './uploaded_images'
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)
             file_path = os.path.join(upload_folder, image_file.filename)
