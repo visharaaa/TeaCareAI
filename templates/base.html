@@ -5,25 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PlantCare AI{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
-    <link rel="stylesheet" href="{{url_for('static',filename='css/index.css')}}">
     <link rel="stylesheet" href="{{url_for('static',filename='css/header.css')}}">
-    {% block extra_css %}css comes here{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
     <header>
-        <img src="{{url_for('static',filename='icons/logo.png')}}">
+        <img src="{{url_for('static',filename='icons/logo.png')}}" alt="PlantCare AI">
         <div class="header-buttons">
             <button class="not-actived" onclick="window.location.href='{{ url_for('home') }}'">Home</button>
             <button class="not-actived" onclick="window.location.href='{{ url_for('analayze') }}'">Analyze</button>
-            <button class="not-actived" onclick="window.location.href='{{url_for('about')}}'">About us</button>
+            <button class="not-actived" onclick="window.location.href='{{url_for('about')}}'">About Us</button>
             <button class="not-actived" onclick="window.location.href='{{url_for('login')}}'">Login</button>
-
         </div>
     </header>
-    {% block content %}Content goes here{% endblock %}
-    {% block extra_js %}js comes here{% endblock %}
+
+    {% block content %}{% endblock %}
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>

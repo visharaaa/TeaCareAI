@@ -1,65 +1,107 @@
 .about-hero {
-    margin-top: 0px;
-    padding: 80px 20px;
+    padding: calc(var(--header-h) + 70px) 5% 80px;
     text-align: center;
-    background-color: #e8f5e9;
+    background: linear-gradient(160deg, var(--white) 0%, var(--primary-tint) 100%);
+    border-bottom: 1px solid var(--primary-border);
 }
 
 .about-hero h1 {
-    color: #157f3c;
-    font-size: 48px;
-    margin-bottom: 20px;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800;
+    color: var(--text-heading);
+    margin-bottom: 18px;
 }
+
+.about-hero h1 span { color: var(--primary); }
 
 .about-hero p {
-    color: #555;
-    font-size: 20px;
-    max-width: 700px;
+    font-size: 17px;
+    color: var(--text-muted);
+    font-weight: 500;
+    max-width: 620px;
     margin: 0 auto;
+    line-height: 1.7;
 }
 
+
 .team-section {
-    padding: 60px 20px;
+    padding: 80px 5% 100px;
     text-align: center;
+    background: var(--primary-bg);
+}
+
+.team-section h2 {
+    font-size: clamp(24px, 4vw, 38px);
+    font-weight: 800;
+    color: var(--text-heading);
+    margin-bottom: 12px;
+}
+
+.team-section > p {
+    font-size: 16px;
+    color: var(--text-muted);
+    margin-bottom: 52px;
 }
 
 .team-grid {
     display: flex;
     justify-content: center;
-    gap: 40px;
-    margin-top: 40px;
+    gap: 28px;
     flex-wrap: wrap;
 }
 
 .member-card {
-    border: 2px solid #157f3c;
-    border-radius: 15px;
-    padding: 30px;
-    width: 250px;
-    transition: transform 0.3s;
+    background: var(--white);
+    border: 1.5px solid var(--primary-border);
+    border-radius: var(--radius-xl);
+    padding: 36px 28px;
+    width: 260px;
+    transition: transform var(--transition), box-shadow var(--transition);
+    text-align: center;
 }
 
 .member-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 10px 20px rgba(21, 127, 60, 0.2);
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-lg);
 }
 
 .avatar {
-    width: 80px;
-    height: 80px;
-    background-color: #157f3c;
-    color: white;
+    width: 72px;
+    height: 72px;
+    background: var(--primary);
+    color: var(--white);
     border-radius: 50%;
     margin: 0 auto 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    font-weight: bold;
+    font-size: 24px;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(21,127,60,0.28);
+}
+
+.member-card h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin-bottom: 6px;
 }
 
 .role {
-    color: #157f3c;
-    font-weight: 600;
-    margin: 10px 0;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 10px;
+    background: var(--primary-tint);
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--primary-border);
+}
+
+.member-card .desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    margin-top: 10px;
 }

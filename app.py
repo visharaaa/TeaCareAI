@@ -30,8 +30,6 @@ def analayze():
                 'treatment': 'Remove infected leaves. Apply a sulfur-based fungicide or neem oil spray directly to the foliage.'
             }), 200
 
-
-        
     elif request.method == 'GET':
         return render_template('analayze.html')
 

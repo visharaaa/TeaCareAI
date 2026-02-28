@@ -1,24 +1,24 @@
-// Select the necessary DOM elements
+// ── DOM Elements ──
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const previewImg = document.getElementById('preview-img');
-const imagePreviewBox = document.getElementById('image-preview-box');
-const noImageText = imagePreviewBox.querySelector('p'); // Gets the "No Image Selected" text
+const previewOverlay = document.getElementById('preview-overlay');
+const uploadBoxInner = document.getElementById('upload-box-inner');
+const removeImgBtn = document.getElementById('remove-img-btn');
 
-// 1. Click to upload functionality
-dropZone.addEventListener('click', () => {
+// ── Click to browse ──
+dropZone.addEventListener('click', (e) => {
+    if (e.target === removeImgBtn || removeImgBtn.contains(e.target)) return;
     fileInput.click();
 });
 
-fileInput.addEventListener('change', function() {
-    if (this.files && this.files[0]) {
-    handleFile(this.files[0]);
-    }
+fileInput.addEventListener('change', function () {
+    if (this.files && this.files[0]) handleFile(this.files[0]);
 });
 
-// 2. Drag and Drop functionality
+// ── Drag & Drop ──
 dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault(); // Prevents the browser from opening the image in a new tab
+    e.preventDefault();
     dropZone.classList.add('drag-active');
 });
 
@@ -26,41 +26,40 @@ dropZone.addEventListener('dragleave', () => {
     dropZone.classList.remove('drag-active');
 });
 
-
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('drag-active');
-
-    // Check if files were dropped
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
-
-        // Validate that the file is an image
         if (file.type.startsWith('image/')) {
-            fileInput.files = e.dataTransfer.files; // Sync the dropped file to the hidden input
-                handleFile(file);
+            fileInput.files = e.dataTransfer.files;
+            handleFile(file);
         } else {
             alert("Please upload an image file (JPG, PNG, JPEG).");
         }
     }
 });
 
+// ── Remove image button ──
+removeImgBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearPreview();
+});
 
-// 3. Function to read the file and update the preview
+function clearPreview() {
+    previewOverlay.style.display = 'none';
+    uploadBoxInner.style.display = 'flex';
+    previewImg.src = '';
+    fileInput.value = '';
+}
+
+// ── Handle file & show preview ──
 function handleFile(file) {
     const reader = new FileReader();
-
-        reader.onload = function(e) {
-        // Update the image source and display it
+    reader.onload = function (e) {
         previewImg.src = e.target.result;
-        previewImg.style.display = 'block';
-
-        // Hide the "No Image Selected" text
-        if (noImageText) {
-            noImageText.style.display = 'none';
-        }
-    }
-
-    // Read the image file as a data URL
+        previewOverlay.style.display = 'block';
+        uploadBoxInner.style.display = 'none';
+    };
     reader.readAsDataURL(file);
 }

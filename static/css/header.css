@@ -1,16 +1,23 @@
 header {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 70px;
+    height: var(--header-h);
     z-index: 1000;
-    background-color: rgb(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(21, 127, 60, 0.1);
     display: flex;
-    justify-content: flex-start;
+    align-items: center;
+    padding: 0 32px;
+    gap: 20px;
 }
 
 header img {
-    width: 75px;
+    width: 68px;
+    flex-shrink: 0;
 }
 
 .header-buttons {
@@ -18,18 +25,28 @@ header img {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: 4px;
 }
 
-header button {
-    width: 130px;
-    height: 40px;
-    font-size: 20px;
-    background-color: transparent;
+.header-buttons button {
+    height: 38px;
+    padding: 0 18px;
+    font-size: 15px;
+    font-weight: 600;
+    background: transparent;
     border: none;
-    font-weight: 700;
-    margin: 0 10px;
+    color: var(--text-heading);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition), color var(--transition);
+    position: relative;
 }
 
+.header-buttons button:hover {
+    background: var(--primary-tint);
+    color: var(--primary);
+}
+
+/* Active underline animation */
 .not-actived {
     position: relative;
 }
@@ -37,19 +54,34 @@ header button {
 .not-actived::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    background-color: #157f3c;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 0;
-    height: 2px;
-    transition: width 0.3s ease;
+    height: 2.5px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width var(--transition);
 }
 
 .not-actived:hover::after,
 .not-actived.active::after {
-    width: 100%;
+    width: 60%;
 }
 
 #actived {
-    border-bottom: 2px solid #157f3c;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+#actived::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2.5px;
+    background: var(--primary);
+    border-radius: 2px;
 }

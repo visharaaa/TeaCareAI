@@ -8,42 +8,111 @@
 
 {% block content %}
 
-    <div class="analyze-container">
-        <div class="upload-section">
-            <div class="upload-box" id="drop-zone">
-                <img src="{{url_for('static',filename='icons/green-upload.png')}}" alt="Upload" class="upload-icon">
-                <h3>Drag & Drop or Click to Upload</h3>
-                <p>Supports: JPG, PNG, JPEG</p>
-                <input type="file" id="file-input" hidden accept="image/JPG, image/png, image/jpeg">
+<div class="analyze-wrapper">
+
+    <!-- LEFT: History Panel -->
+    <aside class="history-panel">
+        <div class="history-header">
+            <div class="history-title-row">
+                <span class="history-icon"></span>
+                <h2>Analysis History</h2>
             </div>
-            <button class="scan-btn" id="scan-button">Start Analysis</button>
+            <span class="history-count" id="history-count">0 scans</span>
         </div>
 
-        <div class="result-section">
-            <div class="result-card">
-                <div class="image-preview" id="image-preview-box">
-                    <p>No Image Selected</p>
-                    <img id="preview-img" src="" style="display: none;">
+        <div class="history-list" id="history-list">
+            <div class="history-empty" id="history-empty">
+                <div class="empty-icon"></div>
+                <p>No plants analyzed yet.</p>
+                <p class="empty-sub">Your scan history will appear here.</p>
+            </div>
+        </div>
+
+        <button class="clear-history-btn" id="clear-history-btn">Clear History</button>
+    </aside>
+
+    <!-- RIGHT: Upload Form -->
+    <main class="upload-main">
+        <div class="form-card">
+            <div class="form-header">
+                <h1>Plant <span class="accent">Analyzer</span></h1>
+                <p class="form-subtitle">Upload a leaf image and provide details for a full diagnosis</p>
+            </div>
+
+            <!-- Drop Zone -->
+            <div class="upload-box" id="drop-zone">
+                <div class="upload-box-inner" id="upload-box-inner">
+                    <div class="upload-icon-wrap">
+                        <img src="{{url_for('static',filename='icons/green-upload.png')}}" alt="Upload" class="upload-icon">
+                    </div>
+                    <h3>Drag & Drop or <span class="click-link">Browse</span></h3>
+                    <p class="upload-hint">Supports: JPG, PNG, JPEG</p>
+                    <input type="file" id="file-input" hidden accept="image/jpg, image/png, image/jpeg">
                 </div>
-                <div class="result-details">
+                <!-- Preview inside drop zone -->
+                <div class="preview-overlay" id="preview-overlay" style="display:none;">
+                    <img id="preview-img" src="" alt="Preview">
+                    <button class="remove-img-btn" id="remove-img-btn" title="Remove image">✕</button>
+                </div>
+            </div>
+
+            <!-- Text Fields Row -->
+            <div class="fields-row">
+                <div class="field-group">
+                    <label for="location-input">
+                        <span class="field-icon"></span> Location
+                    </label>
+                    <input type="text" id="location-input" placeholder="e.g. Greenhouse A, Row 3" class="text-field">
+                </div>
+                <div class="field-group">
+                    <label for="barcode-input">
+                        <span class="field-icon"></span> Barcode / Plant ID
+                    </label>
+                    <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
+                </div>
+            </div>
+
+            <!-- Scan Button -->
+            <button class="scan-btn" id="scan-button">
+                <span class="btn-icon"></span>
+                <span id="btn-text">Start Analysis</span>
+            </button>
+
+            <!-- Result Card (hidden until scan) -->
+            <div class="result-card" id="result-card" style="display:none;">
+                <div class="result-header">
                     <h3>Analysis Result</h3>
-                    <div class="detail-row">
-                        <span class="label">Status:</span>
-                        <span class="value healthy" id="status-text">Waiting...</span>
+                    <span class="result-badge" id="result-badge">—</span>
+                </div>
+                <div class="result-rows">
+                    <div class="result-row">
+                        <span class="result-label">Status</span>
+                        <span class="result-value" id="status-text">Waiting...</span>
                     </div>
-                    <div class="detail-row">
-                        <span class="label">Confidence:</span>
-                        <span class="value" id="confidence-text">--%</span>
+                    <div class="result-row">
+                        <span class="result-label">Confidence</span>
+                        <span class="result-value" id="confidence-text">--%</span>
                     </div>
-                    <div class="treatment-box">
-                        <h4>Recommended Treatment</h4>
-                        <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
+                    <div class="result-row">
+                        <span class="result-label">Location</span>
+                        <span class="result-value" id="result-location">—</span>
                     </div>
+                    <div class="result-row">
+                        <span class="result-label">Barcode</span>
+                        <span class="result-value" id="result-barcode">—</span>
+                    </div>
+                </div>
+                <div class="treatment-box">
+                    <h4>💊 Recommended Treatment</h4>
+                    <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
+</div>
+
 {% endblock %}
+
 {% block extra_js %}
     <script src="{{url_for('static',filename='js/analyze.js')}}"></script>
     <script src="{{url_for('static',filename='js/image_uploader.js')}}"></script>

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - PlantCare AI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{url_for('static',filename='css/signup.css')}}">
+{% endblock %}
+
+{% block content %}
+
+<div class="signup-container">
+
+    <!-- Left decorative panel -->
+    <div class="signup-panel">
+        <div class="panel-content">
+            <div class="panel-logo">🌿</div>
+            <h2>Join PlantCare AI</h2>
+            <p>Start protecting your plants with the power of artificial intelligence — free, instant, and accurate.</p>
+            <div class="panel-features">
+                <div class="panel-feature">
+                    <span class="pf-icon">🔬</span>
+                    <span>AI-powered disease detection</span>
+                </div>
+                <div class="panel-feature">
+                    <span class="pf-icon">📍</span>
+                    <span>Location & batch tracking</span>
+                </div>
+                <div class="panel-feature">
+                    <span class="pf-icon">📋</span>
+                    <span>Full scan history & reports</span>
+                </div>
+                <div class="panel-feature">
+                    <span class="pf-icon">💊</span>
+                    <span>Instant treatment plans</span>
+                </div>
+            </div>
+        </div>
+        <!-- decorative blobs -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Right: form -->
+    <div class="signup-form-wrap">
+        <div class="signup-box">
+            <div class="signup-header">
+                <h2>Create Account</h2>
+                <p>Fill in your details to get started</p>
+            </div>
+
+            <form onsubmit="handleSignup(event)">
+
+                <!-- Name row -->
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="first-name">First Name</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="first-name" placeholder="Vishara" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="last-name">Last Name</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="last-name" placeholder="Perera" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">✉️</span>
+                        <input type="email" id="email" placeholder="farmer@example.com" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="phone">Phone Number <span class="optional">(optional)</span></label>
+                    <div class="input-wrap">
+                        <span class="input-icon">📞</span>
+                        <input type="tel" id="phone" placeholder="+94 71 000 0000">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" placeholder="Min. 8 characters" required>
+                        <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1">👁️</button>
+                    </div>
+                    <div class="pw-strength" id="pw-strength">
+                        <div class="pw-bar"><div class="pw-fill" id="pw-fill"></div></div>
+                        <span id="pw-label"></span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="confirm-password" placeholder="Repeat your password" required>
+                    </div>
+                    <p class="match-msg" id="match-msg"></p>
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agree" required>
+                        <span class="checkmark"></span>
+                        <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="signup-btn" id="signup-btn">
+                    <span id="signup-btn-text">Create Account</span>
+                </button>
+
+            </form>
+
+            <p class="footer-text">Already have an account? <span onclick="window.location.href='{{url_for('login')}}'">Login</span></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Password strength ──
+const pwInput = document.getElementById('password');
+const pwFill = document.getElementById('pw-fill');
+const pwLabel = document.getElementById('pw-label');
+const confirmInput = document.getElementById('confirm-password');
+const matchMsg = document.getElementById('match-msg');
+const togglePw = document.getElementById('toggle-pw');
+
+const levels = [
+    { label: 'Too short',  color: '#ef5350', w: '20%' },
+    { label: 'Weak',       color: '#ffa726', w: '40%' },
+    { label: 'Fair',       color: '#ffee58', w: '60%' },
+    { label: 'Good',       color: '#66bb6a', w: '80%' },
+    { label: 'Strong 💪',  color: '#157f3c', w: '100%' },
+];
+
+function scorePassword(pw) {
+    if (pw.length < 6) return 0;
+    let score = 1;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return Math.min(score, 4);
+}
+
+pwInput.addEventListener('input', () => {
+    const val = pwInput.value;
+    if (!val) { pwFill.style.width = '0'; pwLabel.textContent = ''; return; }
+    const idx = scorePassword(val);
+    const lvl = levels[idx];
+    pwFill.style.width = lvl.w;
+    pwFill.style.background = lvl.color;
+    pwLabel.textContent = lvl.label;
+    pwLabel.style.color = lvl.color;
+    checkMatch();
+});
+
+// ── Match check ──
+function checkMatch() {
+    const pw = pwInput.value;
+    const cp = confirmInput.value;
+    if (!cp) { matchMsg.textContent = ''; return; }
+    if (pw === cp) {
+        matchMsg.textContent = '✓ Passwords match';
+        matchMsg.style.color = '#157f3c';
+    } else {
+        matchMsg.textContent = '✗ Passwords do not match';
+        matchMsg.style.color = '#ef5350';
+    }
+}
+
+confirmInput.addEventListener('input', checkMatch);
+
+// ── Show/hide password ──
+togglePw.addEventListener('click', () => {
+    const type = pwInput.type === 'password' ? 'text' : 'password';
+    pwInput.type = type;
+    togglePw.textContent = type === 'password' ? '👁️' : '🙈';
+});
+
+// ── Submit ──
+function handleSignup(e) {
+    e.preventDefault();
+    if (pwInput.value !== confirmInput.value) {
+        confirmInput.focus();
+        return;
+    }
+    const btn = document.getElementById('signup-btn');
+    const txt = document.getElementById('signup-btn-text');
+    btn.disabled = true;
+    txt.textContent = 'Creating account…';
+    // TODO: replace with your Flask POST route
+    setTimeout(() => {
+        btn.disabled = false;
+        txt.textContent = 'Create Account';
+        alert('Account created! (wire up your Flask route)');
+    }, 1500);
+}
+</script>
+{% endblock %}
