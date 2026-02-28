@@ -244,27 +244,28 @@ def get_treatment_recommendation(disease_name, severity_level, location):
         final_response = ollama_response['message']['content'].strip()
 
         # Outputting results
-        print(f"Best match: {disease_name}")
-        print(f"Severity level: {severity}")
-        print(f"Confidence: {confidence_percent}%")
-        print("=" * 60)
-
-        print("You may wee symptoms like:")
-        print("-" * 50)
+        # print(f"Best match: {disease_name}")
+        # print(f"Severity level: {severity}")
+        # print(f"Confidence: {confidence_percent}%")
+        # print("=" * 60)
+        #
+        # print("You may wee symptoms like:")
+        # print("-" * 50)
         if symptoms.strip():
+            pass
             print(symptoms)
         else:
             print("No symptoms recorded")
 
-        print(f"\nRecommended treatments for {disease_name} ({severity} severity):")
-        print("-" * 50)
-        print(treatments)
-        print("\nNote: Always consult a local agricultural expert before applying treatments")
+        # print(f"\nRecommended treatments for {disease_name} ({severity} severity):")
+        # print("-" * 50)
+        # print(treatments)
+        #print("\nNote: Always consult a local agricultural expert before applying treatments")
 
         # Ollama response
         # print("\nOllama output:")
         # print("-" * 50)
-        print("\n" + final_response)
+        # print("\n" + final_response)
 
         # JSON output file
         output_json = {
