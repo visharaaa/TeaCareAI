@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request,jsonify
-from tea_disease_identifier import predict,claculate_infection_percentage
 import os
+from tea_disease_identifier import get_disease,get_severity_level
+from treatment_recommendations import get_treatment_recommendation
 
 
 app = Flask(__name__)
@@ -32,12 +33,13 @@ def analayze():
             file_path = os.path.join(upload_folder, image_file.filename)
             image_file.save(file_path)
             results = predict(image_file.filename)
+            print('results', results)
 
             #model take controll from here and process the image, then return the result to the frontend
             return jsonify({
-                'status': 'Disease Detected: Powdery Mildew',
-                'confidence': '94.5%',
-                'treatment': 'Remove infected leaves. Apply a sulfur-based fungicide or neem oil spray directly to the foliage.'
+                'status': results['matched_disease'],
+                'confidence': results['confidence_percent'],
+                'treatment': results['llm_response']
             }), 200
 
 
@@ -56,18 +58,13 @@ def login():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+def predict(img):
+    diesase_name, infection_percentage = get_disease(img)
+    #print(f"Disease Name: {diesase_name}, Infection Percentage: {infection_percentage}%")
+    severity_level = get_severity_level(infection_percentage)
+    print(f"Severity Level: {severity_level}")
+    output=get_treatment_recommendation(diesase_name, severity_level)
+    return output
 
 
 if __name__ == '__main__':
