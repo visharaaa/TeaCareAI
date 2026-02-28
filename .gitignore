@@ -5,3 +5,7 @@ __pycache__/
 uploaded_images/
 chroma_DB/
 .idea/
+*.json
+*.csv
+*.txt
+
