@@ -14,7 +14,14 @@
     <aside class="history-panel">
         <div class="history-header">
             <div class="history-title-row">
-                <span class="history-icon"></span>
+                <!-- Leaf icon -->
+                <span class="history-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                    </svg>
+                </span>
                 <h2>Analysis History</h2>
             </div>
             <span class="history-count" id="history-count">0 scans</span>
@@ -22,13 +29,29 @@
 
         <div class="history-list" id="history-list">
             <div class="history-empty" id="history-empty">
-                <div class="empty-icon"></div>
+                <div class="empty-icon">
+                    <!-- Inbox / empty state -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        stroke="var(--primary-border)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+                        <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                    </svg>
+                </div>
                 <p>No plants analyzed yet.</p>
                 <p class="empty-sub">Your scan history will appear here.</p>
             </div>
         </div>
 
-        <button class="clear-history-btn" id="clear-history-btn">Clear History</button>
+        <button class="clear-history-btn" id="clear-history-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Clear History
+        </button>
     </aside>
 
     <!-- RIGHT: Upload Form -->
@@ -39,34 +62,78 @@
                 <p class="form-subtitle">Upload a leaf image and provide details for a full diagnosis</p>
             </div>
 
-            <!-- Drop Zone -->
+            <!-- Upload Box (shown when doing a new scan) -->
             <div class="upload-box" id="drop-zone">
                 <div class="upload-box-inner" id="upload-box-inner">
                     <div class="upload-icon-wrap">
-                        <img src="{{url_for('static',filename='icons/green-upload.png')}}" alt="Upload" class="upload-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 16 12 12 8 16"/>
+                            <line x1="12" x2="12" y1="12" y2="21"/>
+                            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                        </svg>
                     </div>
-                    <h3>Drag & Drop or <span class="click-link">Browse</span></h3>
+                    <h3>Drag &amp; Drop or <span class="click-link">Browse</span></h3>
                     <p class="upload-hint">Supports: JPG, PNG, JPEG</p>
                     <input type="file" id="file-input" hidden accept="image/jpg, image/png, image/jpeg">
                 </div>
-                <!-- Preview inside drop zone -->
+                <!-- Image preview after upload -->
                 <div class="preview-overlay" id="preview-overlay" style="display:none;">
                     <img id="preview-img" src="" alt="Preview">
-                    <button class="remove-img-btn" id="remove-img-btn" title="Remove image">✕</button>
+                    <button class="remove-img-btn" id="remove-img-btn" title="Remove image" aria-label="Remove image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" x2="6" y1="6" y2="18"/>
+                            <line x1="6" x2="18" y1="6" y2="18"/>
+                        </svg>
+                    </button>
                 </div>
+            </div>
+
+            <!-- History Image Viewer (hidden by default, shown when viewing a history record) -->
+            <div class="history-image-viewer" id="history-image-viewer" style="display:none;">
+                <img id="history-view-img" src="" alt="Scanned plant">
+                <div class="history-view-no-img" id="history-view-no-img" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="var(--primary-border)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <circle cx="9" cy="9" r="2"/>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                    </svg>
+                    <p>No image available for this record</p>
+                </div>
+                <button class="new-scan-btn" id="new-scan-btn" aria-label="Start new scan">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" x2="6" y1="6" y2="18"/>
+                        <line x1="6" x2="18" y1="6" y2="18"/>
+                    </svg>
+                    New Scan
+                </button>
             </div>
 
             <!-- Text Fields Row -->
             <div class="fields-row">
                 <div class="field-group">
                     <label for="location-input">
-                        <span class="field-icon"></span> Location
+                        <!-- Map pin -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        Location
                     </label>
                     <input type="text" id="location-input" placeholder="e.g. Greenhouse A, Row 3" class="text-field">
                 </div>
                 <div class="field-group">
                     <label for="barcode-input">
-                        <span class="field-icon"></span> Barcode / Plant ID
+                        <!-- Barcode / tag -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+                        </svg>
+                        Barcode / Plant ID
                     </label>
                     <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
                 </div>
@@ -74,11 +141,17 @@
 
             <!-- Scan Button -->
             <button class="scan-btn" id="scan-button">
-                <span class="btn-icon"></span>
+                <!-- Scan / search icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                    <path d="M11 8v6M8 11h6"/>
+                </svg>
                 <span id="btn-text">Start Analysis</span>
             </button>
 
-            <!-- Result Card (hidden until scan) -->
+            <!-- Result Card -->
             <div class="result-card" id="result-card" style="display:none;">
                 <div class="result-header">
                     <h3>Analysis Result</h3>
@@ -103,7 +176,16 @@
                     </div>
                 </div>
                 <div class="treatment-box">
-                    <h4>Recommended Treatment</h4>
+                    <h4>
+                        <!-- Pill / treatment -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-2px; margin-right:5px;">
+                            <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                            <path d="m8.5 8.5 7 7"/>
+                        </svg>
+                        Recommended Treatment
+                    </h4>
                     <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
                 </div>
             </div>
@@ -116,4 +198,11 @@
 {% block extra_js %}
     <script src="{{url_for('static',filename='js/analyze.js')}}"></script>
     <script src="{{url_for('static',filename='js/image_uploader.js')}}"></script>
+
+    <!-- Pass DB records into the history panel -->
+    <script>
+        const dbRecords = {{ records | tojson }};
+        loadHistoryFromDB(dbRecords);
+    </script>
+    
 {% endblock %}
