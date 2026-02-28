@@ -68,19 +68,45 @@ def claculate_infection_percentage(pixel_count_arr):
     pixel_count_arr[0]=0 #to ignore the healthy area
     pixel_count=pixel_count_arr.sum()
     infection_percentages = (pixel_count / total_pixels) * 100
-    return infection_percentages
+    #print('infection_percentages', infection_percentages)
+    return np.round(infection_percentages,2)
+
+#params=> pixel count array of each class as numpy array
+#this function determines the disease name based on the pixel counts for each class.
+def get_disease_name(pixel_count_arr):
+    pixel_count_arr[0]=0 #to ignore the healthy area
+    disease_index = np.argmax(pixel_count_arr)
+    return names[disease_index]
+
+#param=> saved image name in uploaded_images folder
+#this function combines the previous functions to get both the disease name and the infection percentage for a given image. 
+# It first calls the predict function to get the pixel count array, then uses that array to determine the disease name and calculate the infection percentage. 
+# Finally, it returns both the disease name and the infection percentage as a tuple.
+def get_disease(img):
+    pixel_count_arr = predict(img)
+    infection_percentage = claculate_infection_percentage(pixel_count_arr)
+    disease_name = get_disease_name(pixel_count_arr)
+    # print('disease_name', disease_name)
+    # print('infection_percentage', infection_percentage)
+    return disease_name, float(infection_percentage)
+
+#params=> infection percentage
+#this function categorizes the severity of the infection based on the percentage of infection.
+def get_severity_level(infection_percentage):
+    if infection_percentage >= 75:
+        return "High"
+    elif infection_percentage >= 25:
+        return "Medium"
+    else:
+        return "Low"
 
 
 
 
 
-model = YOLO("best.pt") 
+model = YOLO('./tea_disease_identifier_weight.pt') # Load the YOLO model with the specified weights
 names = model.names #names is a list of class names corresponding to the class IDs used in the model.
 
 #print(predict('Blister_Blight_dt3_00119.jpg'))
-print(claculate_infection_percentage(predict('Blister_Blight_dt3_00119.jpg')))
+print(claculate_infection_percentage(predict('Blister_Blight_dt3_00201.jpg')))
 #print(predict('Blister_Blight_dt3_00132.jpg'))
-
-
-
-
