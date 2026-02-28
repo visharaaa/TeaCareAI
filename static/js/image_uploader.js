@@ -109,7 +109,7 @@ function renderHistory() {
             <div class="history-item-top">
                 ${entry.imageDataUrl
                     ? `<img class="history-thumb" src="${entry.imageDataUrl}" alt="thumb">`
-                    : `<div class="history-thumb-placeholder">🌿</div>`
+                    : `<div class="history-thumb-placeholder"></div>`
                 }
                 <div class="history-info">
                     <div class="history-status">${entry.status}</div>
@@ -117,8 +117,8 @@ function renderHistory() {
                 </div>
             </div>
             <div class="history-meta">
-                ${entry.location !== '—' ? `<span class="history-tag">📍 ${entry.location}</span>` : ''}
-                ${entry.barcode !== '—' ? `<span class="history-tag">🔖 ${entry.barcode}</span>` : ''}
+                ${entry.location !== '—' ? `<span class="history-tag"> ${entry.location}</span>` : ''}
+                ${entry.barcode !== '—' ? `<span class="history-tag"> ${entry.barcode}</span>` : ''}
             </div>
             <div class="history-date">${entry.date}</div>
         `;
