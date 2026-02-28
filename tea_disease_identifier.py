@@ -68,7 +68,7 @@ def claculate_infection_percentage(pixel_count_arr):
     pixel_count_arr[0]=0 #to ignore the healthy area
     pixel_count=pixel_count_arr.sum()
     infection_percentages = (pixel_count / total_pixels) * 100
-    return infection_percentages
+    return np.round(infection_percentages,2)
 
 
 
@@ -78,5 +78,5 @@ model = YOLO("best.pt")
 names = model.names #names is a list of class names corresponding to the class IDs used in the model.
 
 #print(predict('Blister_Blight_dt3_00119.jpg'))
-print(claculate_infection_percentage(predict('Blister_Blight_dt3_00119.jpg')))
+# print(claculate_infection_percentage(predict('Blister_Blight_dt3_00201.jpg')))
 #print(predict('Blister_Blight_dt3_00132.jpg'))
