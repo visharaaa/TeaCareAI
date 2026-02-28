@@ -92,7 +92,7 @@ def get_disease(img):
 
 #params=> infection percentage
 #this function categorizes the severity of the infection based on the percentage of infection.
-def severity_level(infection_percentage):
+def get_severity_level(infection_percentage):
     if infection_percentage >= 75:
         return "High"
     elif infection_percentage >= 25:
