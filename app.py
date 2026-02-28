@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request,jsonify
-from tea_disease_identifier import predict
+from tea_disease_identifier import predict,claculate_infection_percentage
 import os
 
 

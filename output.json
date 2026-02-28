@@ -1,0 +1,12 @@
+{
+    "query": "blister blight low",
+    "location": "Hatton",
+    "matched_disease": "Blister Blight",
+    "matched_severity": "Low",
+    "confidence_percent": 67.8,
+    "symptoms": "Small, pinhole-sized translucent spots on young leaves (less than 1 month old); spots slightly enlarge but no blistering yet; mild on a few shoots; favored by cool (15-25°C), humid (>90% RH) conditions; initial crop loss <10%. Slight leaf depression on upper surface; no sporulation yet.",
+    "treatments": "Cultural: Improve air circulation through pruning and shade regulation (maintain 40-60% shade). Predictive spraying based on weather forecasts (e.g., if >80% RH for 3 days). No fungicide needed if caught early; monitor young shoots weekly. Biocontrol: Apply Trichoderma spp. or Bacillus-based bioagents as preventive foliar spray (1-2 g/L water, twice monthly). Avoid overhead irrigation to reduce humidity.",
+    "llm_response": "Hello! As a tea disease assistant in Hatton, I'm here to help you identify and manage Blister Blight on your tea plants.\n\n**What's wrong with my tea?**\nSmall pinhole-sized spots appear on young leaves (less than 1 month old)\nSpots get slightly bigger but don't turn into blisters yet\nOnly a few shoots are affected at first\n\n**How to treat it?**\n\n* Cultural management:\n\t+ Prune and regulate shade (40-60% is ideal) to improve air circulation\n\t+ Predictive spraying based on weather forecasts (e.g., >80% RH for 3 days)\n\t+ No fungicide needed if caught early, just monitor young shoots weekly\n* Biocontrol:\n\t+ Apply Trichoderma spp. or Bacillus-based bioagents as preventive foliar spray (1-2 g/L water, twice monthly)\n\n**Practical tips for local farmers:**\n\n* Be mindful of overhead irrigation, which increases humidity and can spread the disease.\n* Regularly inspect your young shoots and take action early to prevent the disease from spreading.\n\nRemember, safety first! Always use protective gear when handling chemicals or bioagents. If you're unsure about anything, feel free to reach out to me for guidance.",
+    "timestamp": "2026-02-28 09:36:28",
+    "status": "success"
+}

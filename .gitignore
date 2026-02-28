@@ -3,3 +3,4 @@ test_images/
 runs/
 __pycache__/
 uploaded images/
+chroma_DB/
