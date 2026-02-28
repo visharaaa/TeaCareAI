@@ -104,7 +104,7 @@ def get_severity_level(infection_percentage):
 
 
 
-model = YOLO("best.pt") 
+model = YOLO('./tea_disease_identifier_weight.pt') # Load the YOLO model with the specified weights
 names = model.names #names is a list of class names corresponding to the class IDs used in the model.
 
 #print(predict('Blister_Blight_dt3_00119.jpg'))

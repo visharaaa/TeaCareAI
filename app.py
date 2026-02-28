@@ -33,7 +33,7 @@ def analayze():
             file_path = os.path.join(upload_folder, image_file.filename)
             image_file.save(file_path)
             results = predict(image_file.filename)
-            print('results', results)
+            #print('results', results)
 
             #model take controll from here and process the image, then return the result to the frontend
             return jsonify({
