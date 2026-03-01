@@ -2,74 +2,129 @@ import psycopg2
 from db_credentials import create_db_connection
 from werkzeug.security import generate_password_hash
 
+class Database:
+    def __init__(self):
+        self.conn = create_db_connection()
+        self.cur = self.conn.cursor()
 
-def test_db_connection():
-    try:
-        conn = create_db_connection()
-        cur = conn.cursor()
-        
-        # Test query to see if it works!
-        cur.execute('SELECT version();')
-        db_version = cur.fetchone()
-        
-        cur.close()
-        conn.close()
-        return f"Successfully connected to the database! PostgreSQL version: {db_version}"
-    except Exception as e:
-        return f"Database connection failed: {e}"
+    #params=>none
+    #this function will be called to test the database connection
+    #it will return the database version if the connection is successful
+    #it will return an error message if the connection is not successful
+    def test_db_connection(self):
+        try:
+            self.cur.execute('SELECT version();')
+            db_version = self.cur.fetchone()
+            return f"Successfully connected! PostgreSQL version: {db_version}"
+        except Exception as e:
+            return f"Database connection failed: {e}"
+
+    #params=>query, params
+    #this function will be called to handle errors when inserting data into the database
+    #it will take the query and parameters as a parameter
+    def input_error_handler(self, query, params):
+        try:
+            self.cur.execute(query, params)
+            self.conn.commit()
+            print("Success: Database operation completed.")
+            return True
+        except psycopg2.IntegrityError as e:
+            self.conn.rollback()
+            print(f"An unexpected error occurred: {e}")
+            print("Database Error: A record with that ID/Unique constraint already exists.")
+            return False
+        except Exception as e:
+            self.conn.rollback()
+            print(f"An unexpected error occurred: {e}")
+            return False
+        finally:
+            self.cur.close()
+            self.cur = self.conn.cursor() 
+
+    #params=>query, params, fetch_all
+    #this function will be called to fetch data from the database
+    #it will return the data as dictionary if the data is found
+    #it will return None if the data is not found
+    def fetch_data_handler(self, query, params=None, fetch_all=True):
+        try:
+            self.cur.execute(query, params or ())
+            # Handle cases where query returns no description (like an UPDATE)
+            if self.cur.description is None:
+                return None
+                
+            colnames = [desc[0] for desc in self.cur.description]
+
+            if fetch_all:
+                rows = self.cur.fetchall()
+                return [dict(zip(colnames, row)) for row in rows]
+            else:
+                row = self.cur.fetchone()
+                return dict(zip(colnames, row)) if row else None
+        except Exception as e:
+            print(f"Error fetching data: {e}")
+            return None
+
+    #params=>user_id, user_name, email, plain_password, user_type
+    #this function will be called when a new user is being registered. 
+    #It will take the plain password, hash it securely, and then store the hashed password in the database along with the other user details.
+    def add_user(self, user_id, user_name, email, plain_password, user_type):
+        hashed_password = generate_password_hash(plain_password)
+        query = "INSERT INTO users (user_id, user_name, email, password, user_type)VALUES (%s, %s, %s, %s, %s)"
+        # Note the 'self.' prefix here
+        return self.input_error_handler(query, (user_id, user_name, email, hashed_password, user_type))
+
+    #params=>user_id
+    #this function will be called to fetch a user from the database
+    #it will return the user details if the user is found
+    #it will return None if the user is not found
+    def get_user(self, user_id):
+        query = "SELECT * FROM users WHERE user_id = %s"
+        result = self.fetch_data_handler(query, (user_id,), fetch_all=False)
+        return result
+
+    #params=>field_id
+    #this function will be called to fetch a specific field from the database
+    #it will return the field value if the field is found
+    #it will return None if the field is not found
+    def get_field(self,field_id):
+        query = "SELECT * FROM fields WHERE field_id = %s"
+        result = self.fetch_data_handler(query, (field_id), fetch_all=False)
+        return result
+
+    #params=>user_id
+    #this function will be called to  fetch a specific user's field using user_id
+    # it will return the field value as dictionary if the field is found
+    # it will return None if the field is not found
+    def get_users_field(self,user_id):
+        query = """ 
+                select f.field_id as field_id,user_id,field_name,field_latitude,field_longitude,field_elevation,tea_variety,plant_age_in_years
+                from field as f inner join ownership as own on f.field_id = own.field_id
+                where f.field_id = %s;
+            """
+        result=self.fetch_data_handler(query, (user_id,), fetch_all=True)
+        return result
+
+    #params=>user_id,field_id,field_name,field_latitude,field_longitude,field_elevation,tea_variety,plant_age_in_years
+    #this function will be called to add a new field to the database
+    #it will return True if the field is added successfully
+    #it will return False if the field is not added successfully
+    def add_field(self,user_id,field_id,field_name,field_latitude,field_longitude,field_elevation,tea_variety,plant_age_in_years):
+        query = 'select user_id from users where user_id = %s;'
+        result = self.fetch_data_handler(query, (user_id,), fetch_all=False)
+        if result:
+            query = 'insert into field values (%s,%s,%s,%s,%s,%s,%s);'
+            result = self.input_error_handler(query,(field_id, field_name, field_latitude, field_longitude, field_elevation,tea_variety, plant_age_in_years))
+            if result:
+                query = 'insert into ownership values (%s,%s);'
+                result = self.input_error_handler(query, (user_id, field_id))
+                return result
+            return "Error /n Could not add field"
+        return f"This is no such an user"
 
 
 
+if __name__ == "__main__":
+    db = Database()
 
-#params=>user_id, user_name, email, plain_password, user_type
-# add_new_user(1002, "Sharuna", "sharuna@test.com", "my_secret_password", "Admin")
-# this function will be called when a new user is being registered. 
-# It will take the plain password, hash it securely, and then store the hashed password in the database along with the other user details.
-def add_new_user(user_id, user_name, email, plain_password, user_type):
-    """
-    Inserts a new user into the database securely.
-    Returns True if successful, False if it fails.
-    """
-    # Encrypt the password! 
-    hashed_password = generate_password_hash(plain_password)
-    
-    cur = conn.cursor()
-    
-    try:
-        # The SQL query using %s placeholders for security
-        insert_query = """
-            INSERT INTO users (user_id, user_name, email, password, user_type)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        
-        # Execute the query with the actual variables
-        cur.execute(insert_query, (user_id, user_name, email, hashed_password, user_type))
-        
-        # Commit (save) the changes to the database
-        conn.commit()
-        print(f"Success: User '{user_name}' was added to the database!")
-        return True
-        
-    except psycopg2.IntegrityError as e:
-        # This catches errors like trying to use an email or user_id that already exists
-        conn.rollback() # Undo the broken transaction
-        print(f"Database Error: A user with that ID or Email already exists.")
-        return False
-        
-    except Exception as e:
-        # Catch any other random errors
-        conn.rollback()
-        print(f"An unexpected error occurred: {e}")
-        return False
-        
-    finally:
-        #close the connection
-        cur.close()
-        conn.close()
+    print(db.add_field(1,5, 'Estate Block B', 6.96000000, 6.96000000, 6.96000000, 'unknow', 30))
 
-
-
-
-conn=create_db_connection()
-print(test_db_connection())
-add_new_user(1002, "Sharuna", "sharuna@test.com", "my_secret_password", "Admin")
