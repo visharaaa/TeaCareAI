@@ -42,5 +42,48 @@ for test_case in test_cases:
     else:
         y_true.append(0) # do not match
 
+# Testing by looping through test cases
+for query, expected_disease, expected_severity in test_cases:
+    query_embedding = embedder.encode(query).tolist()
+    # Get the severity level from last word
+    if " " in query:
+        words = query.split()
+        severity_level = words[-1]
+    else:
+        severity_level = "medium"
+    severity_cap = severity_level.capitalize()
 
+    # Find best match for severity level
+    filtered = collection.query(
+        query_embeddings = [query_embedding],
+        n_results = 1,
+        where = {"severity": severity_cap},
+        include = ["metadatas"]
+    )
+
+    if filtered["ids"] and filtered["ids"][0]: # If match found, save it
+        match = filtered["metadatas"][0][0]
+    else: # Else find best match without severity level
+        unfiltered = collection.query(
+            query_embeddings = [query_embedding],
+            n_results = 1,
+            include = ["metadatas"]
+        )
+        if unfiltered["ids"]:
+            match = unfiltered["metadatas"][0][0]
+        else: # Nothing found
+            match = None
+
+    correct = 0
+    if match is not None:
+        if match["disease"] == expected_disease:
+            if match["severity"] == expected_severity:
+                correct = 1
+            else:
+                correct = 0
+        else:
+            correct = 0
+    else:
+        correct = 0
+    y_pred.append(correct)
 
