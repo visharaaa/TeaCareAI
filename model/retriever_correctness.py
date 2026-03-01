@@ -2,6 +2,7 @@
 
 from sentence_transformers import SentenceTransformer
 import chromadb
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 embedder = SentenceTransformer('BAAI/bge-small-en-v1.5')
 client = chromadb.PersistentClient(path = "chroma_db_manual")
@@ -28,6 +29,18 @@ test_cases = [
     ("coffee rust high", None, None),
     ("thaveesha urvinda", None, None)
 ]
+
+# Finding correct answers
+y_pred = []
+y_true = []
+for test_case in test_cases:
+    first_value = test_case[0]
+    disease_label = test_case[1]
+    third_value = test_case[2]
+    if disease_label is not None:
+        y_true.append(1) # match
+    else:
+        y_true.append(0) # do not match
 
 
 
