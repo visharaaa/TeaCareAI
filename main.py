@@ -1,4 +1,3 @@
-# main.py
 import pandas as pd
 import numpy as np
 import joblib
@@ -37,7 +36,7 @@ if __name__ == "__main__":
         leaf_input = {
             'Total_Leaf_Area_mm2': 1200,
             'Affected_Area_Pre': 400,
-            'Affected_Area_Post': 120,  # IMPORTANT if included during training
+            'Affected_Area_Post': 120,
             'Humidity_Pct': 75,
             'Temp_Celsius': 27,
             'Disease_Type_Blister Blight': 1,
