@@ -308,3 +308,132 @@ else:
     for entry in data:
         print(f"{entry['disease']}")
 
+
+def get_treatment_recommendation(disease_name, severity_level, location = "Sri Lanka"):
+    query = f"{disease_name} {severity_level}"
+
+    # Embedding the query
+    query_embedding = embedder.encode(query).tolist()
+
+    # Find an exact severity match
+    severity_cap = severity_level.capitalize()
+
+    filtered_results = collection.query(
+        query_embeddings = [query_embedding],
+        n_results = 1,
+        where = {"severity": severity_cap},  # To get the exact severity
+        include = ["distances", "metadatas"]
+    )
+
+    # Use filtered if found otherwise fallback to unfiltered
+    if filtered_results["ids"] and filtered_results["ids"][0]:
+        results = filtered_results
+    else:
+        results = collection.query(
+            query_embeddings = [query_embedding],
+            n_results = 1,
+            include = ["distances", "metadatas"]  # Distance for confidence check
+        )
+
+    # Checking if found results
+    if results["ids"] and results["ids"][0]:
+        best_match = None
+        best_index = 0
+
+        # Prefer the one where severity matches user request
+        for i in range(len(results["ids"][0])):
+            distance = results["distances"][0][i]  # Lowest distance gives better match
+            match = results["metadatas"][0][i]
+            confidence = round((1 - distance) * 100, 1)
+            print(f"Match {i + 1}: {match['disease']} ({match['severity']}) - Confidence: {confidence}%")
+
+            # Boost if severity matches user input
+            if severity_level.lower() in match["severity"].lower():
+                best_match = match
+                best_index = i
+                break
+
+        # Fallback to the best match if no severity match
+        if not best_match:
+            best_match = results["metadatas"][0][0]
+            best_index = 0
+
+        disease_name = best_match["disease"]
+        severity = best_match["severity"]
+        symptoms = best_match["symptoms"]
+        treatments = best_match["treatments"]
+        confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
+
+        # Ollama response
+        llm_prompt = f"""
+        You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response since the user lives there.
+        Only use the provided information below. Do not add, invent, or assume any facts.
+
+        Retrieved data:
+        Disease: {disease_name}
+        Severity: {severity}
+        Symptoms: {symptoms}
+        Treatments: {treatments}
+
+        Give a friendly, simple response in English.
+        - Explain symptoms in easy words in point form
+        - List and explain treatments in bullet points
+        - Add 2-3 practical tips for local farmers
+        - Keep short (150-250 words)
+        - End with safety note
+        """
+
+        # Call Ollama (llama3.1:8b model)
+        ollama_response = ollama.chat(model='llama3.1:8b', messages=[{
+            'role': 'user',
+            'content': llm_prompt,
+        }])
+
+        final_response = ollama_response['message']['content'].strip()
+        if symptoms.strip():
+            pass
+            print(symptoms)
+        else:
+            print("No symptoms recorded")
+
+        # JSON output file
+        output_json = {
+            "query": query,
+            "location": location,
+            "matched_disease": disease_name,
+            "matched_severity": severity,
+            "confidence_percent": confidence_percent,
+            "symptoms": symptoms.strip() if symptoms.strip() else "No symptoms recorded",
+            "treatments": treatments,
+            "llm_response": final_response,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "success"
+        }
+
+        # Save to JSON file
+        json_output_file = "output.json"
+        with open(json_output_file, "w", encoding="utf-8") as f:
+            json.dump(output_json, f, indent=4, ensure_ascii=False)
+
+        print(f"\nJSON output saved to {json_output_file}")
+
+        # Logging the information
+        log_file = "rag_log.csv"
+        headers = ["Query", "Location", "Matched Disease", "Matched Severity", "Confidence (%)", "LLM Response",
+                   "Timestamp"]
+
+        file_exists = os.path.isfile(log_file)
+
+        with open(log_file, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if not file_exists or os.stat(log_file).st_size == 0:
+                writer.writerow(headers)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            writer.writerow([query, location, disease_name, severity, confidence_percent, final_response, timestamp])
+        return output_json
+
+    else:
+        for entry in data:
+            print(f"{entry['disease']}")
+        return "No match found for the query. Please check the disease name and severity level."
+
