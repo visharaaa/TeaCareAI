@@ -175,22 +175,16 @@ CREATE TABLE user_refresh_token (
 
 --  INDEXES
 
--- Fast lookup of all fields owned by a users
 CREATE INDEX idx_ownership_user         ON ownership(user_id);
 
--- Fast lookup of all scans for a field
 CREATE INDEX idx_scan_history_field     ON user_scan_history(field_id);
 
--- Fast lookup of all scans by a users
 CREATE INDEX idx_scan_history_user      ON user_scan_history(user_id);
 
--- Fast lookup of detections per scan
 CREATE INDEX idx_detection_scan         ON detection(scan_id);
 
--- Fast lookup of detections by disease
 CREATE INDEX idx_detection_disease      ON detection(disease_id);
 
--- Fast lookup of detections by status (e.g. find all 'under_treatment')
 CREATE INDEX idx_detection_status       ON detection(status);
 
 CREATE INDEX idx_refresh_token_user ON user_refresh_token(user_id);
