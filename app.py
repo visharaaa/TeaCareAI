@@ -1,7 +1,13 @@
-from flask import Flask, render_template, request,jsonify
+from flask import Flask, render_template, request, jsonify, url_for
+from db import Database
+import os
 
 
+db=Database()
 app = Flask(__name__)
+
+
+user_id='1'
 
 @app.route('/')
 def home():
@@ -23,75 +29,40 @@ def analayze():
             return jsonify({'error': 'No file selected for uploading'}), 400
         
         if image_file:
-            # model takes control from here and processes the image
+            # 3. Save the uploaded file to the server
+            upload_folder = './static/uploaded_leaves'
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            file_path = os.path.join(upload_folder, image_file.filename)
+            image_file.save(file_path)
+            #results = predict(image_file.filename)
+            # print('results', results)
             return jsonify({
                 'status': 'Disease Detected: Powdery Mildew',
                 'confidence': '94.5%',
                 'treatment': 'Remove infected leaves. Apply a sulfur-based fungicide or neem oil spray directly to the foliage.'
             }), 200
 
-    # elif request.method == 'GET':
-    #     # ── Fetch scan history from your database ──
-    #     raw_records = db.execute(
-    #         "SELECT status, confidence, treatment, location, barcode, image_url, date FROM scans ORDER BY date DESC"
-    #     ).fetchall()
-
-    #     # Convert each row to a plain dictionary so Jinja2 can serialize it
-    #     records = [dict(row) for row in raw_records]
-
-    #     return render_template('analayze.html', records=records)
-
     elif request.method == 'GET':
-        # ── Static test records ──
-        records = [
-            {
-                'status':     'Disease Detected: Powdery Mildew',
-                'confidence': '94.5%',
-                'treatment':  'Remove infected leaves. Apply a sulfur-based fungicide or neem oil spray directly to the foliage.',
-                'location':   'Greenhouse A, Row 3',
-                'barcode':    'PLT-20240601-007',
-                'image_url':  '',
-                'date':       '2024-06-01 14:32'
-            },
-            {
-                'status':     'Healthy',
-                'confidence': '98.1%',
-                'treatment':  'No treatment needed. Continue regular watering and monitoring.',
-                'location':   'Greenhouse B, Row 1',
-                'barcode':    'PLT-20240602-012',
-                'image_url':  '',
-                'date':       '2024-06-02 09:15'
-            },
-            {
-                'status':     'Disease Detected: Leaf Blight',
-                'confidence': '87.3%',
-                'treatment':  'Prune affected areas immediately. Apply copper-based fungicide every 7 days for 3 weeks.',
-                'location':   'Field C, Section 2',
-                'barcode':    'PLT-20240603-019',
-                'image_url':  '',
-                'date':       '2024-06-03 11:47'
-            },
-            {
-                'status':     'Disease Detected: Root Rot',
-                'confidence': '91.0%',
-                'treatment':  'Improve drainage. Remove and destroy infected roots. Treat soil with a phosphonate fungicide.',
-                'location':   'Field A, Section 5',
-                'barcode':    'PLT-20240604-023',
-                'image_url':  '',
-                'date':       '2024-06-04 16:05'
-            },
-            {
-                'status':     'Healthy',
-                'confidence': '96.7%',
-                'treatment':  'No treatment needed. Plant looks strong — maintain current care routine.',
-                'location':   'Greenhouse A, Row 7',
-                'barcode':    'PLT-20240605-031',
-                'image_url':  '',
-                'date':       '2024-06-05 08:20'
-            },
-        ]
+        # ── Fetch scan history from your database ──
+        records = db.get_user_chat_history_by_user_id(user_id)
+        print(records)
+        data=[]
+        for record in records:
+            data.append(
+                {
+                    'disease_name': record['disease_name'],
+                    'confidence': str(round(record['confidence_score'],2)*100)+'%',
+                    'treatment': record['treatment'],
+                    'location': record['location'],
+                    'barcode': record['detection_code'],
+                    'imageDataUrl': url_for('static', filename='uploaded_leaves/'+record['imagedataurl']),
+                    'date': record['date']
+                }
+            )
+        print(data)
 
-    return render_template('analayze.html', records=records)
+        return render_template('analayze.html', records=data)
 
 
 @app.route('/about')

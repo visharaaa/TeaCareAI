@@ -166,7 +166,7 @@ class Database:
     #it will return None if the user chat history is not found
     def get_user_chat_history_by_user_id(self,user_id):
         query="""
-                select disease_name,confidence_score,generated_advice as treatment,longitude,detection_code,image_name,chat_created_timestamp as date
+                select disease_name,confidence_score,generated_advice as treatment,longitude as location,detection_code,image_name as imageDataUrl,chat_created_timestamp as date
                 from user_scan_history as ush inner join scan_history_chat as shc on ush.scan_id=shc.scan_id
                     inner join detection as d on shc.scan_id= d.scan_id
                     inner join disease as dis on d.disease_id=dis.disease_id

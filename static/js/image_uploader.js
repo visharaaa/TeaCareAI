@@ -241,14 +241,15 @@ function loadHistoryFromDB(records) {
 
     // Normalise each DB record into the internal history entry format
     const normalised = records.map(record => ({
-        status      : record.status       || 'Unknown',
-        confidence  : record.confidence   || '--%',
-        treatment   : record.treatment    || 'No treatment data available.',
-        location    : record.location     || '—',
-        barcode     : record.barcode      || '—',
-        imageDataUrl: record.image_url    || null,
-        date        : record.date         || '—'
+        status      : record.disease_name                   || 'Unknown',
+        confidence  : record.confidence                     || '--%',
+        treatment   : record.treatment                      || 'No treatment data available.',
+        location    : record.longitude                      || '—',
+        barcode     : record.barcode                        || '—',
+        imageDataUrl: record.imageDataUrl                   || null,
+        date        : record.date                           || '—'
     }));
+    console.log(normalised);
 
     // Replace the in-memory store (newest first — reverse if DB returns oldest first)
     analysisHistory = normalised;
