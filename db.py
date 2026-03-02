@@ -79,7 +79,7 @@ class Database:
     #this function will be called to fetch a user from the database
     #it will return the user details if the user is found
     #it will return None if the user is not found
-    def get_user(self, user_id):
+    def get_user_by_user_id(self, user_id):
         query = "SELECT * FROM users WHERE user_id = %s"
         result = self.fetch_data_handler(query, (user_id,), fetch_all=False)
         return result
@@ -97,7 +97,7 @@ class Database:
     #this function will be called to  fetch a specific user's field using user_id
     # it will return the field value as dictionary if the field is found
     # it will return None if the field is not found
-    def get_users_field(self,user_id):
+    def get_users_field_by_user_id(self,user_id):
         query = """ 
                 select f.field_id as field_id,user_id,field_name,field_latitude,field_longitude,field_elevation,tea_variety,plant_age_in_years
                 from field as f inner join ownership as own on f.field_id = own.field_id
@@ -127,7 +127,7 @@ class Database:
     #this function will be called to delete a field from the database
     #it will return True if the field is deleted successfully
     #it will return False if the field is not deleted successfully
-    def delete_field(self,field_id):
+    def delete_field_by_field_id(self,field_id):
         query = 'delete from field where field_id = %s'
 
     def update_field(self,field_id,field_name,field_latitude,field_longitude,field_elevation):
