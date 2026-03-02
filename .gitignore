@@ -2,3 +2,4 @@
 test_images/
 db_credentials.py
 __pycache__/
+.idea/
