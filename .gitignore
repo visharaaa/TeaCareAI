@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-.vscode/
-test_images/
 db_credentials.py
-__pycache__/
-.idea/
-=======
-data/
-.conda/
-tea_disease_model/
-.vscode/
-uploaded_images/
-test.ipynb
->>>>>>> origin/DiseaseDetection
+.idea
+
