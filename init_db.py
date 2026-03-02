@@ -2,11 +2,7 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 DB_USER = "postgres"
-<<<<<<< HEAD
 DB_PASSWORD = "" #change this to your password
-=======
-DB_PASSWORD = "Sharuna@100499" #change this to your password
->>>>>>> 473fe75f1d72bd5f9b13e8aeb30e6748b5e563db
 DB_HOST = "localhost"
 DB_PORT = "5432"
 NEW_DB_NAME = "tea_disease_detection_system" #change this to your new database name
@@ -43,7 +39,7 @@ from db_credentials import create_db_connection
 #params=>none
 #this function will be called to create tables in the database
 def create_tables():
-    with open('../init_db/create_tables.sql', 'r') as file:
+    with open('./init_db/create_tables.sql', 'r') as file:
         sql_script = file.read()
 
     # Connect to the database
@@ -64,8 +60,8 @@ def create_tables():
 
 #params=>none
 #this function will be called to add testing data to the database
-def testing_db():
-    with open('./test_data.sql', 'r') as file:
+def add_dummimg_data():
+    with open('./init_db/test_data.sql', 'r') as file:
         sql_script = file.read()
 
     # Connect to the database
@@ -85,7 +81,7 @@ def testing_db():
         conn.close()
 
 
-if __name__ == "__main__":
-    create_postgres_db()
-    create_tables()
-    testing_db()
+
+create_postgres_db()
+create_tables()
+add_dummimg_data()

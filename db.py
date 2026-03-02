@@ -1,4 +1,6 @@
 import psycopg2
+from sympy.polys.polyconfig import query
+
 from db_credentials import create_db_connection
 from werkzeug.security import generate_password_hash
 
@@ -87,7 +89,7 @@ class Database:
     #it will return the field value if the field is found
     #it will return None if the field is not found
     def get_field(self,field_id):
-        query = "SELECT * FROM fields WHERE field_id = %s"
+        query = "SELECT * FROM field WHERE field_id = %s"
         result = self.fetch_data_handler(query, (field_id), fetch_all=False)
         return result
 
@@ -121,10 +123,92 @@ class Database:
             return "Error /n Could not add field"
         return f"This is no such an user"
 
+    #params=>field_id
+    #this function will be called to delete a field from the database
+    #it will return True if the field is deleted successfully
+    #it will return False if the field is not deleted successfully
+    def delete_field(self,field_id):
+        query = 'delete from field where field_id = %s'
+
+    def update_field(self,field_id,field_name,field_latitude,field_longitude,field_elevation):
+        query=("""
+               update field 
+               set field_name = %s, field_latitude = %s, field_longitude = %s, field_elevation = %s,plant_age_in_years = %s 
+               where field_id = %s;
+               """)
+        result=self.input_error_handler(query, (field_name, field_latitude, field_longitude, field_elevation, field_id))
+
+    #params=>scan_id
+    #this function will be called to fetch a scan chat history from the database
+    #it will return the scan chat history as a dictionary if the scan chat history is found
+    #it will return None if the scan chat history is not found
+    def get_scan_chat_history_by_scan_id(self,scan_id):
+        query = 'select scan_id,chat_created_timestamp,latitude,longitude,elevation from scan_history_chat where scan_id = %s;'
+        result = self.fetch_data_handler(query, (scan_id,), fetch_all=False)
+        return result
+
+    #params=>user_id
+    #this function will be called to fetch a scan chat history by user id from the database
+    #it will return the scan chat history as a dictionary if the scan chat history is found
+    #it will return None if the scan chat history is not found
+    def get_scan_chat_history_by_user_id(self,user_id):
+        query="""
+                select shc.scan_id as scan_id,chat_created_timestamp,longitude,latitude,elevation
+                from scan_history_chat as shc inner join user_scan_history as usc on shc.scan_id = usc.scan_id
+                where user_id=%s;
+        """
+        result = self.fetch_data_handler(query, (user_id,), fetch_all=True)
+        return result
+
+    #params=>user_id
+    #this function will be called to fetch a user chat history by user id from the database
+    #it will return the user chat history as a dictionary if the user chat history is found
+    #it will return None if the user chat history is not found
+    def get_user_chat_history_by_user_id(self,user_id):
+        query="""
+                select disease_name,confidence_score,generated_advice as treatment,longitude,detection_code,image_name,chat_created_timestamp as date
+                from user_scan_history as ush inner join scan_history_chat as shc on ush.scan_id=shc.scan_id
+                    inner join detection as d on shc.scan_id= d.scan_id
+                    inner join disease as dis on d.disease_id=dis.disease_id
+                    inner join applied_treatment as at on d.detection_id=at.detection_id
+                    inner join treatment_recommendation as tr on at.recommendation_id = tr.recommendation_id
+                where user_id=%s;
+        """
+        result = self.fetch_data_handler(query, (user_id,), fetch_all=True)
+        return result
+
+
+
+
 
 
 if __name__ == "__main__":
     db = Database()
 
-    print(db.add_field(1,5, 'Estate Block B', 6.96000000, 6.96000000, 6.96000000, 'unknow', 30))
+    result=db.get_user_chat_history_by_user_id('1')
+    for item in result:
+        for i in item:
+            print(f"{i}: {item[i]}")
+        print()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #print(db.add_field(1,5, 'Estate Block B', 6.96000000, 6.96000000, 6.96000000, 'unknow', 30))
 
