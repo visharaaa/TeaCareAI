@@ -2,7 +2,11 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 DB_USER = "postgres"
+<<<<<<< HEAD
 DB_PASSWORD = "" #change this to your password
+=======
+DB_PASSWORD = "Sharuna@100499" #change this to your password
+>>>>>>> 473fe75f1d72bd5f9b13e8aeb30e6748b5e563db
 DB_HOST = "localhost"
 DB_PORT = "5432"
 NEW_DB_NAME = "tea_disease_detection_system" #change this to your new database name
