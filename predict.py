@@ -1,4 +1,4 @@
-from leaf_evaluator import LeafEvaluator
+from main import LeafEvaluator
 
 evaluator = LeafEvaluator()
 
