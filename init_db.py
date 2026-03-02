@@ -2,11 +2,13 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 DB_USER = "postgres"
-DB_PASSWORD = ""
+DB_PASSWORD = "Sharuna@100499" #change this to your password
 DB_HOST = "localhost"
 DB_PORT = "5432"
-NEW_DB_NAME = ""
+NEW_DB_NAME = "tea_disease_detection_system" #change this to your new database name
 
+#params=>none
+#this function will be called to create a new database
 def create_postgres_db():
     # Connect to the default 'postgres' database
     conn = psycopg2.connect(
@@ -33,8 +35,11 @@ def create_postgres_db():
 
 from db_credentials import create_db_connection
 
+
+#params=>none
+#this function will be called to create tables in the database
 def create_tables():
-    with open('./create_tables.sql', 'r') as file:
+    with open('../init_db/create_tables.sql', 'r') as file:
         sql_script = file.read()
 
     # Connect to the database
@@ -53,7 +58,30 @@ def create_tables():
         cursor.close()
         conn.close()
 
+#params=>none
+#this function will be called to add testing data to the database
+def testing_db():
+    with open('./test_data.sql', 'r') as file:
+        sql_script = file.read()
+
+    # Connect to the database
+    conn = create_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Execute the entire script as one string
+        cursor.execute(sql_script)
+        conn.commit()
+        print("add testing data successfully!")
+    except Exception as e:
+        conn.rollback()  # Roll back on error
+        print(f"An error occurred: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 if __name__ == "__main__":
     create_postgres_db()
     create_tables()
+    testing_db()
