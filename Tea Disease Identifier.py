@@ -5,7 +5,8 @@ import os
 import numpy as np
 
 class TeaDiseaseIdentifier:
-    #params => weight path of the model
+    
+    #params => weight path of the model, path of the image folder
     #this function initializes the model and the names of the classes
     def __init__(self,weight_path,imgPath):
         self.model = YOLO(weight_path)
