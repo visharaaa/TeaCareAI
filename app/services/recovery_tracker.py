@@ -48,4 +48,3 @@ if __name__ == "__main__":
 
         prediction = evaluator.predict_improvement(leaf_input)
         print(f"Predicted Health Improvement: {prediction:.2f}%")
->>>>>>> origin/RecoveryTracking

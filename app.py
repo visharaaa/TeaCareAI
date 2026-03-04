@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, url_for
-from db import Database
+from app.database.db import Database
 import os
 
 

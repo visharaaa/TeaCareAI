@@ -39,7 +39,7 @@ from db_credentials import create_db_connection
 #params=>none
 #this function will be called to create tables in the database
 def create_tables():
-    with open('./init_db/create_tables.sql', 'r') as file:
+    with open('init_db/create_tables.sql', 'r') as file:
         sql_script = file.read()
 
     # Connect to the database
@@ -61,7 +61,7 @@ def create_tables():
 #params=>none
 #this function will be called to add testing data to the database
 def add_dummimg_data():
-    with open('./init_db/test_data.sql', 'r') as file:
+    with open('init_db/test_data.sql', 'r') as file:
         sql_script = file.read()
 
     # Connect to the database
