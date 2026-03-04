@@ -1,13 +1,29 @@
 import psycopg2
 from sympy.polys.polyconfig import query
 
-from db_credentials import create_db_connection
 from werkzeug.security import generate_password_hash
 
 class Database:
-    def __init__(self):
-        self.conn = create_db_connection()
+    def __init__(self,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT):
+        self.conn = self.create_db_connection(DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT)
         self.cur = self.conn.cursor()
+
+
+    #params=>DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT
+    #this function will be called to create a database connection
+    #it will return the database connection if the connection is successful
+    #it will return an error message if the connection is not successful
+    def create_db_connection(self,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT):
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=DB_PORT
+        )
+        return conn
+
+    
 
     #params=>none
     #this function will be called to test the database connection
@@ -43,6 +59,8 @@ class Database:
             self.cur.close()
             self.cur = self.conn.cursor() 
 
+
+
     #params=>query, params, fetch_all
     #this function will be called to fetch data from the database
     #it will return the data as dictionary if the data is found
@@ -66,6 +84,8 @@ class Database:
             print(f"Error fetching data: {e}")
             return None
 
+
+
     #params=>user_id, user_name, email, plain_password, user_type
     #this function will be called when a new user is being registered. 
     #It will take the plain password, hash it securely, and then store the hashed password in the database along with the other user details.
@@ -74,6 +94,9 @@ class Database:
         query = "INSERT INTO users (user_id, user_name, email, password, user_type)VALUES (%s, %s, %s, %s, %s)"
         # Note the 'self.' prefix here
         return self.input_error_handler(query, (user_id, user_name, email, hashed_password, user_type))
+
+
+
 
     #params=>user_id
     #this function will be called to fetch a user from the database
@@ -84,6 +107,9 @@ class Database:
         result = self.fetch_data_handler(query, (user_id,), fetch_all=False)
         return result
 
+
+
+
     #params=>field_id
     #this function will be called to fetch a specific field from the database
     #it will return the field value if the field is found
@@ -92,6 +118,9 @@ class Database:
         query = "SELECT * FROM field WHERE field_id = %s"
         result = self.fetch_data_handler(query, (field_id), fetch_all=False)
         return result
+
+
+
 
     #params=>user_id
     #this function will be called to  fetch a specific user's field using user_id
@@ -105,6 +134,9 @@ class Database:
             """
         result=self.fetch_data_handler(query, (user_id,), fetch_all=True)
         return result
+
+
+
 
     #params=>user_id,field_id,field_name,field_latitude,field_longitude,field_elevation,tea_variety,plant_age_in_years
     #this function will be called to add a new field to the database
@@ -123,6 +155,8 @@ class Database:
             return "Error /n Could not add field"
         return f"This is no such an user"
 
+
+
     #params=>field_id
     #this function will be called to delete a field from the database
     #it will return True if the field is deleted successfully
@@ -138,6 +172,8 @@ class Database:
                """)
         result=self.input_error_handler(query, (field_name, field_latitude, field_longitude, field_elevation, field_id))
 
+
+
     #params=>scan_id
     #this function will be called to fetch a scan chat history from the database
     #it will return the scan chat history as a dictionary if the scan chat history is found
@@ -146,6 +182,8 @@ class Database:
         query = 'select scan_id,chat_created_timestamp,latitude,longitude,elevation from scan_history_chat where scan_id = %s;'
         result = self.fetch_data_handler(query, (scan_id,), fetch_all=False)
         return result
+
+
 
     #params=>user_id
     #this function will be called to fetch a scan chat history by user id from the database
@@ -159,6 +197,8 @@ class Database:
         """
         result = self.fetch_data_handler(query, (user_id,), fetch_all=True)
         return result
+
+
 
     #params=>user_id
     #this function will be called to fetch a user chat history by user id from the database
@@ -176,39 +216,4 @@ class Database:
         """
         result = self.fetch_data_handler(query, (user_id,), fetch_all=True)
         return result
-
-
-
-
-
-
-if __name__ == "__main__":
-    db = Database()
-
-    result=db.get_user_chat_history_by_user_id('1')
-    for item in result:
-        for i in item:
-            print(f"{i}: {item[i]}")
-        print()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #print(db.add_field(1,5, 'Estate Block B', 6.96000000, 6.96000000, 6.96000000, 'unknow', 30))
 
