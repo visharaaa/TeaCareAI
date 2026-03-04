@@ -5,7 +5,7 @@ import chromadb
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 embedder = SentenceTransformer('BAAI/bge-small-en-v1.5')
-client = chromadb.PersistentClient(path = "chroma_db_manual")
+client = chromadb.PersistentClient(path = "chroma_DB")
 collection = client.get_or_create_collection(name = "treatments_data")
 
 # Test cases: (query, expected_disease, expected_severity)
@@ -86,4 +86,25 @@ for query, expected_disease, expected_severity in test_cases:
     else:
         correct = 0
     y_pred.append(correct)
+
+# Evaluation metrics
+precision = precision_score(y_true, y_pred)
+recall = recall_score(y_true, y_pred)
+f1 = f1_score(y_true, y_pred)
+
+correct_count = 0
+for i in range(len(y_true)):
+    if y_true[i] == y_pred[i]:
+        correct_count = correct_count + 1
+    else:
+        pass
+accuracy = (correct_count / len(y_true)) * 100
+
+print("Retriever Correctness Evaluation (no threshold):")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-Score: {f1:.4f}")
+print(f"Accuracy: {accuracy:.1f}%")
+print(f"Test queries: {len(test_cases)}")
+
 
