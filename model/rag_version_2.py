@@ -17,12 +17,12 @@ class TeaDiseaseRAG:
         self.db_path = db_path
         self.embedding_model_name = embedding_model
 
-        # Initialize resources
+        # Initialize
         self.embedder = SentenceTransformer(self.embedding_model_name)
         self.client = chromadb.PersistentClient(path = self.db_path)
         self.collection = self.client.get_or_create_collection(name = "treatments_data")
 
-        # Auto-ingest if empty
+        # Auto ingest if empty
         if self.collection.count() == 0:
             self.ingest_data()
         else:
@@ -30,7 +30,7 @@ class TeaDiseaseRAG:
 
 
     def ingest_data(self):
-        # Reads Excel and create the ChromaDB collection.
+        # Reads excel and create the ChromaDB collection.
         if not os.path.exists(self.excel_path):
             logging.error(f"Excel file not found at {self.excel_path}")
             return
@@ -64,7 +64,7 @@ class TeaDiseaseRAG:
             symptoms = str(row.get("Detailed Symptoms", "")).strip()
             treatment = str(row.get(treatment_col, "")).strip()
 
-            # Strong disease name and severity for perfect matching (your original version)
+            # Strong disease name and severity for perfect matching
             text_for_embedding = (
                 f"Severity level: {severity} {severity} {severity} {severity} {severity} "
                 f"High severity is critical, medium is moderate, low is mild - "
@@ -103,3 +103,96 @@ class TeaDiseaseRAG:
             if not file_exists:
                 writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
             writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
+
+
+    def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
+        query = f"{disease_name} {severity_level}"
+        query_embedding = self.embedder.encode(query).tolist()
+        severity_cap = severity_level.capitalize()
+        logging.info(f"Querying for: {disease_name} ({severity_cap})")
+
+        # Search with metadata filter (with strong severity match)
+        results = self.collection.query(
+            query_embeddings = [query_embedding],
+            n_results = 1,
+            where = {"severity": severity_cap},
+            include = ["metadatas", "distances"]
+        )
+
+        # Fallback if no exact severity match
+        if not results['ids'] or not results['ids'][0]:
+            logging.warning(f"No match for severity '{severity_cap}'. Searching...")
+            results = self.collection.query(
+                query_embeddings = [query_embedding],
+                n_results = 1,
+                include = ["metadatas", "distances"]
+            )
+
+        if not results['ids'] or not results['ids'][0]:
+            return {"status": "Error occurred", "message": "No matching data found."}
+
+        # Get the best match
+        best_match = None
+        best_index = 0
+
+        for i in range(len(results["ids"][0])):
+            distance = results["distances"][0][i]
+            match = results["metadatas"][0][i]
+            confidence = round((1 - distance) * 100, 1)
+
+            if severity_level.lower() in match["severity"].lower():
+                best_match = match
+                best_index = i
+                break
+
+        if not best_match:
+            best_match = results["metadatas"][0][0]
+            best_index = 0
+
+        disease = best_match["disease"]
+        severity = best_match["severity"]
+        symptoms = best_match["symptoms"]
+        treatments = best_match["treatments"]
+        confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
+
+        # Generate LLM Response
+        llm_prompt = f"""
+        You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response.
+        Only use the provided information below. Do not add, invent, or assume any facts.
+
+        Retrieved data:
+        Disease: {disease}
+        Severity: {severity}
+        Symptoms: {symptoms}
+        Treatments: {treatments}
+
+        Give a friendly, simple response in English.
+        - Explain symptoms in easy words in point form
+        - List and explain treatments in bullet points
+        - Add 2-3 practical tips for local farmers
+        - Keep short (150-250 words)
+        - End with safety note
+        """
+
+        try:
+            ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [
+                {'role': 'user', 'content': llm_prompt}
+            ])
+            final_response = ollama_response['message']['content'].strip()
+        except Exception as e:
+            final_response = f"Error generating ollama response: {str(e)}"
+
+        # Log and return
+        self.log_request(query, severity, location, disease, confidence_percent, final_response)
+
+        return {
+            "status": "success",
+            "matched_disease": disease,
+            "matched_severity": severity,
+            "llm_response": final_response,
+            "confidence": confidence_percent
+        }
+
+
+
+
