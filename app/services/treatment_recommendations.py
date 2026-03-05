@@ -3,212 +3,214 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import os
 import ollama
-import json
 from datetime import datetime
 import csv
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Logger configuration
+logging.basicConfig(level = logging.INFO, format = '%(asctime)s - %(levelname)s - %(message)s')
 
 class TeaDiseaseRAG:
-    def __init__(self, excel_path, db_path, embedding_model='BAAI/bge-small-en-v1.5'):
+    def __init__(self, excel_path, db_path, embedding_model = 'BAAI/bge-small-en-v1.5'):
         self.excel_path = excel_path
         self.db_path = db_path
         self.embedding_model_name = embedding_model
-        
-        # Initialize resources
+
+        # Initialize
         self.embedder = SentenceTransformer(self.embedding_model_name)
-        self.client = chromadb.PersistentClient(path=self.db_path)
-        self.collection = self.client.get_or_create_collection(name="treatments_data")
-        
-        # Auto-ingest if empty
+        self.client = chromadb.PersistentClient(path = self.db_path)
+        self.collection = self.client.get_or_create_collection(name = "treatments_data")
+
+        # Auto ingest if empty
         if self.collection.count() == 0:
             self.ingest_data()
         else:
-            logging.info(f"Database loaded with {self.collection.count()} entries.")
+            logging.info(f"Database loaded with {self.collection.count()} records.")
 
-    """
-        Loads the tea disease dataset and populates the vector database.
-        
-        Process:
-        1. Reads the Excel file located at 'self.excel_path'.
-        2. Loops through every row to extract Disease, Severity, Symptoms, and Treatment.
-        3. Creates a 'text_for_embedding' string for each row (this is what the AI actually 'reads').
-        4. Generates vector embeddings (lists of numbers) for that text using the SentenceTransformer model.
-        5. Saves everything (text, metadata, and embeddings) into ChromaDB so it can be searched later.
-    """
+
     def ingest_data(self):
-        #Reads Excel and rebuilds the ChromaDB collection.
+        # Reads excel and create the ChromaDB collection.
         if not os.path.exists(self.excel_path):
             logging.error(f"Excel file not found at {self.excel_path}")
             return
 
         logging.info("Reading Excel file and generating embeddings...")
         df = pd.read_excel(self.excel_path)
-        
+
         # Find treatment column dynamically
-        treatment_col = next((col for col in df.columns if "treatment" in str(col).lower()), None)
-        if not treatment_col:
-            logging.error("No 'treatment' column found in Excel.")
+        treatment_col = None
+        for col in df.columns:
+            if "treatment" in str(col).lower():
+                treatment_col = col
+                break
+        print("Treatment column:", treatment_col)
+
+        if treatment_col is None:
+            logging.error("No 'treatment' column was found in Excel file.")
             return
 
         documents = []
+        embeddings = []
         metadatas = []
         ids = []
 
         for index, row in df.iterrows():
-            if row.isna().all(): continue
+            if row.isna().all():
+                continue
 
             disease = str(row.get("Disease", "Unknown"))
             severity = str(row.get("Severity", "Unknown")).strip()
             symptoms = str(row.get("Detailed Symptoms", "")).strip()
             treatment = str(row.get(treatment_col, "")).strip()
 
-            # Create a rich text representation for the vector search
-            # We focus on symptoms and disease name for the semantic search
+            # Strong disease name and severity for perfect matching
             text_for_embedding = (
-                f"Disease: {disease}. "
-                f"Symptoms include: {symptoms}. "
-                f"Recommended treatment: {treatment}."
+                f"Severity level: {severity} {severity} {severity} {severity} {severity} "
+                f"High severity is critical, medium is moderate, low is mild - "
+                f"Current entry is {severity} severity for {disease} {disease} "
+                f"Symptoms: {symptoms} Treatments: {treatment}"
             )
 
             documents.append(text_for_embedding)
-            
-            # Store structured data in metadata for filtering later
+            embeddings.append(self.embedder.encode(text_for_embedding).tolist())
+
             metadatas.append({
                 "disease": disease,
-                "severity": severity.capitalize(), # Normalize casing
+                "severity": severity,
                 "symptoms": symptoms,
                 "treatments": treatment
             })
-            
-            # Create unique ID
+
             clean_id = f"{disease}_{severity}".lower().replace(" ", "_")
             ids.append(clean_id)
 
         # Batch add to ChromaDB
         if documents:
             self.collection.add(
-                documents=documents,
-                embeddings=self.embedder.encode(documents).tolist(),
-                metadatas=metadatas,
-                ids=ids
+                documents = documents,
+                embeddings = embeddings,
+                metadatas = metadatas,
+                ids = ids
             )
             logging.info(f"Successfully ingested {len(documents)} records.")
 
 
-    #params=disease name, severity level, location
-    """
-        Retrieves the most relevant data and generates an AI response.
-        Process:
-        1. Converts the user's query (disease + severity) into a vector embedding.
-        2. Searches ChromaDB for the best match, filtering specifically for the requested severity (Low/Medium/High).
-        3. Extracts the specific symptoms and treatments found in the database.
-        4. Sends this factual data to the LLM (Ollama) with a prompt to act as an expert agronomist.
-        5. Returns the final, user-friendly advice generated by the AI.
-    """
-    def get_recommendation(self, disease_name, severity_level, location="Sri Lanka"):
-        """Retrieves recommendation using Vector Search + Metadata Filtering."""
-        
-        query = f"{disease_name} symptoms and treatment"
+    def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
+        query = f"{disease_name} {severity_level}"
         query_embedding = self.embedder.encode(query).tolist()
         severity_cap = severity_level.capitalize()
-
         logging.info(f"Querying for: {disease_name} ({severity_cap})")
 
-        # 1. Search with Metadata Filter (Strict Severity Match)
+        # Search with metadata filter (with strong severity match)
         results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=1,
-            where={"severity": severity_cap}, # Strict filtering
-            include=["metadatas", "distances"]
+            query_embeddings = [query_embedding],
+            n_results = 1,
+            where = {"severity": severity_cap},
+            include = ["metadatas", "distances"]
         )
 
-        # 2. Fallback: If no exact severity match, relax the filter
+        # Fallback if no exact severity match
         if not results['ids'] or not results['ids'][0]:
-            logging.warning(f"No match for severity '{severity_cap}'. Searching broadly.")
+            logging.warning(f"No match for severity '{severity_cap}'. Searching...")
             results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=1,
-                include=["metadatas", "distances"]
+                query_embeddings = [query_embedding],
+                n_results = 1,
+                include = ["metadatas", "distances"]
             )
 
         if not results['ids'] or not results['ids'][0]:
-            return {"status": "error", "message": "No matching data found."}
+            return {"status": "Error occurred", "message": "No matching data found."}
 
-        # Extract best match
-        match = results['metadatas'][0][0]
-        confidence = round((1 - results['distances'][0][0]) * 100, 1)
+        # Get the best match
+        best_match = None
+        best_index = 0
+
+        for i in range(len(results["ids"][0])):
+            distance = results["distances"][0][i]
+            match = results["metadatas"][0][i]
+            confidence = round((1 - distance) * 100, 1)
+
+            if severity_level.lower() in match["severity"].lower():
+                best_match = match
+                best_index = i
+                break
+
+        if not best_match:
+            best_match = results["metadatas"][0][0]
+            best_index = 0
+
+        disease = best_match["disease"]
+        severity = best_match["severity"]
+        symptoms = best_match["symptoms"]
+        treatments = best_match["treatments"]
+        confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
 
         # Generate LLM Response
         llm_prompt = f"""
-        You are an expert agricultural assistant for tea farmers in {location}.
-        Based ONLY on the following data, provide a treatment plan.
-        
-        Data:
-        - Disease: {match['disease']}
-        - Severity: {match['severity']}
-        - Symptoms: {match['symptoms']}
-        - Treatments: {match['treatments']}
-        
-        Format your response:
-        1. Confirm the disease and severity.
-        2. Bullet points for treatments.
-        3. A brief safety warning.
-        Keep it under 150 words.
+        You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response.
+        Only use the provided information below. Do not add, invent, or assume any facts.
+
+        Retrieved data:
+        Disease: {disease}
+        Severity: {severity}
+        Symptoms: {symptoms}
+        Treatments: {treatments}
+
+        Give a friendly, simple response in English.
+        - Explain symptoms in easy words in point form
+        - List and explain treatments in bullet points
+        - Add 2-3 practical tips for local farmers
+        - Keep short (150-250 words)
+        - End with safety note
         """
 
         try:
-            ollama_response = ollama.chat(model='llama3.1:8b', messages=[
+            ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [
                 {'role': 'user', 'content': llm_prompt}
             ])
-            final_response = ollama_response['message']['content']
+            final_response = ollama_response['message']['content'].strip()
         except Exception as e:
-            final_response = f"Error generating AI response: {str(e)}"
+            final_response = f"Error generating ollama response: {str(e)}"
 
-        # Log and Return
-        self.log_request(query, location, match['disease'], confidence, final_response)
-        
+        # Log and return
+        self.log_request(query, severity, location, disease, confidence_percent, final_response)
+
         return {
             "status": "success",
-            "matched_disease": match['disease'],
-            "matched_severity": match['severity'],
+            "matched_disease": disease,
+            "matched_severity": severity,
             "llm_response": final_response,
-            "confidence": confidence
+            "confidence": confidence_percent
         }
 
+    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
+        respond=self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
+        response=(respond.get("llm_response"),respond.get("confidence"))
+        return response
 
-
-    #params=>query, location, disease, confidence, response
-    """
-        Logs the query and response to a CSV file.
-    """
-    def log_request(self, query, location, disease, confidence, response):
+    def log_request(self, query, severity, location, disease, confidence, response):
         file_exists = os.path.isfile("rag_log.csv")
-        with open("rag_log.csv", "a", newline='', encoding='utf-8') as f:
+        with open("rag_log.csv", "a", newline = '', encoding = 'utf-8') as f:
             writer = csv.writer(f)
             if not file_exists:
-                writer.writerow(["Timestamp", "Query", "Location", "Disease", "Confidence", "Response"])
-            writer.writerow([datetime.now(), query, location, disease, confidence, response])
-
-
-#when you are creating new object of TeaDiseaseRAG you must pass 2 parameters
-#1. excel_path :- Where the Excel file is located
-#2. db_path :- Where the ChromaDB database is located
-#3. embedding_model (optional) :- The embedding model to use (default is 'BAAI/bge-small-en-v1.5')
-#rag_system = TeaDiseaseRAG(excel_path="./data_folder/treatments_data_v2.xlsx",db_path="chroma_DB")
-
-#use get_recommendation method to get the recommendation
-
+                writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
+            writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
 
 
 if __name__ == "__main__":
-    # Initialize system once
-    rag_system = TeaDiseaseRAG(excel_path="./data_folder/treatments_data_v2.xlsx",db_path="chroma_DB")
+    # System initialization
+    rag_system = TeaDiseaseRAG(
+        excel_path = "../data_folder/treatments_data_v2.xlsx",
+        db_path = "chroma_DB"
+    )
 
-    # Run a query
-    result = rag_system.get_recommendation(disease_name="Blister Blight", severity_level="Low", location="Hatton")
-    
-    print("\n--- AI Response ---")
+    # Run example query
+    result = rag_system.get_recommendation(
+        disease_name = "Blister Blight",
+        severity_level = "medium",
+        location = "Hatton"
+    )
+
+    print("\nLLM response:")
     print(result.get('llm_response', result.get('message')))
+

@@ -1,6 +1,7 @@
 from flask import url_for
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
+from app.services.treatment_recommendations import TeaDiseaseRAG
 from config import Config
 import os
 from datetime import datetime
@@ -8,43 +9,48 @@ import threading
 import queue
 
 db = Database()
+user_id=1
 
+
+threading_lock= threading.Lock()
 vision_queue = queue.Queue()
+rag_queue = queue.Queue()
 
 
 
 def tea_disease_identifier_worker():
-    print("Background worker starting... Loading model into VRAM...")
+    print("Background TeaDiseaseIdentifier worker starting...")
 
     # Load the model into new object
     tea_disease_identifier=TeaDiseaseIdentifier('./app/models/tea_disease_identifier_weight.pt','./static/uploaded_leaves')
 
-    print("Model loaded successfully! Worker is ready.")
+    print("TeaDiseaseIdentifier Model loaded successfully! Worker is ready.")
+
     while True:
 
-        #get the next image i from the queue
+        #get the next image  from the queue
         file_path,response_queue=vision_queue.get()
 
-        try:
-            # Process the one image.
-            disease_name,infection_percentage,severity_level=tea_disease_identifier.get_disease(file_path)
+        # Wait for the tread to be completely free
+        with threading_lock:
+            try:
+                # Process the one image.
+                disease_name,infection_percentage,severity_level=tea_disease_identifier.get_disease(file_path)
 
-            result=(disease_name,infection_percentage,severity_level)
+                result=(disease_name,infection_percentage,severity_level)
 
-            # Put the result into this specific user's private pager
-            response_queue.put(result)
+                # Put the result into this specific user's private pager
+                response_queue.put(result)
 
-        except Exception as e:
-            # If the model crashes on a bad image, send the error back
-            response_queue.put(Exception(f"Error processing image: {str(e)}"))
+            except Exception as e:
+                # If the model crashes on a bad image, send the error back
+                response_queue.put(Exception(f"Error processing image: {str(e)}"))
 
-        finally:
-            # Tell the main waiting room this task is officially done
-            vision_queue.task_done()
 
-#initialize the thread
-tea_disease_identifier_worker_thread = threading.Thread(target=tea_disease_identifier_worker, daemon=True) ## daemon=True means this thread will automatically shut down when kill the Flask server
-tea_disease_identifier_worker_thread.start()   #start the thread in background processing
+        # Tell the main waiting room this task is officially done
+        vision_queue.task_done()
+
+
 
 
 
@@ -91,10 +97,43 @@ def predict(img, latitude=10, longitude=20,elevation=2):
 
 
 
+def tea_disease_rag_worker():
+    print("Background TeaDiseaseRAG worker starting...")
+
+    # Load the model into new object
+    tea_disease_rag=TeaDiseaseRAG(Config.KB_PATH,Config.VECTOR_DB_PATH)
+
+    print("TeaDiseaseRAG Model loaded successfully! Worker is ready.")
+
+    while True:
+
+        # get the next disease from the queue
+        inputs,response=rag_queue.get()
+        disease_name, severity_level = inputs
+
+        with threading_lock:
+            try:
+                #getting the recommendations
+                llm_response,confidence=tea_disease_rag.get_treatment(disease_name, severity_level)
+                result=(llm_response,confidence)
+                response.put(result)
+
+            except Exception as e:
+                # If the model crashes, send the error back
+                response.put(Exception(f"Error processing image: {str(e)}"))
+
+        vision_queue.task_done()
 
 
 
 
+#initialize the threads
+tea_disease_identifier_worker_thread = threading.Thread(target=tea_disease_identifier_worker, daemon=True) ## daemon=True means this thread will automatically shut down when kill the Flask server
+tea_disease_rag_worker_thread=threading.Thread(target=tea_disease_rag_worker,daemon=True)
+
+#start the threads in background processing
+tea_disease_identifier_worker_thread.start()
+tea_disease_rag_worker_thread.start()
 
 
 
@@ -182,9 +221,7 @@ def save_codes(id):
 
 
 code_lock = threading.Lock()
-teaDiseaseIdentifier = None
 generate_unique_code_lock = threading.Lock()
-teaDiseaseIdentifier_lock = threading.Lock()
 
 def generate_unique_code(code_type):
     with generate_unique_code_lock:
