@@ -1,26 +1,72 @@
 import psycopg2
-from sympy.polys.polyconfig import query
-
 from werkzeug.security import generate_password_hash
+from config import Config
 
 class Database:
-    def __init__(self,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT):
-        self.conn = self.create_db_connection(DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT)
+    def __init__(self,host=Config.DB_HOST,database=Config.DB_NAME,user=Config.DB_USER,password=Config.DB_PASSWORD,port=Config.DB_PORT):
+        self.conn = self.create_db_connection_credentials(host,database,user,password,port)
         self.cur = self.conn.cursor()
 
 
-    #params=>DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT
+    #params=>none
+    #this function will be called to create tables in the database
+    def create_tables(self,file_path):
+        with open(file_path, 'r') as file:
+            sql_script = file.read()
+
+        # Connect to the database 
+        cursor = self.conn.cursor()
+
+        try:
+            # Execute the entire script as one string
+            cursor.execute(sql_script)
+            self.conn.commit()
+            print("Tables created successfully!")
+        except Exception as e:
+            self.conn.rollback()  # Roll back on error
+            print(f"An error occurred: {e}")
+        finally:
+            cursor.close()
+
+    #params=>none
+    #this function will be called to add testing data to the database
+    def add_dummimg_data(self,file_path):
+        with open(file_path, 'r') as file:
+            sql_script = file.read()
+
+        # Connect to the database
+        cursor = self.conn.cursor()
+
+        try:
+            # Execute the entire script as one string
+            cursor.execute(sql_script)
+            self.conn.commit()
+            print("Added Testing added successfully!")
+        except Exception as e:
+            self.conn.rollback()  # Roll back on error
+            print(f"An error occurred: {e}")
+        finally:
+            cursor.close()
+            self.conn.close()
+
+
+    #params=>DATABASE_URI
     #this function will be called to create a database connection
     #it will return the database connection if the connection is successful
     #it will return an error message if the connection is not successful
-    def create_db_connection(self,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,DB_PORT):
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT
-        )
+    def create_db_connection(self,DATABASE_URI):
+        try:
+            # Connect using the string from your config file
+            conn = psycopg2.connect(DATABASE_URI)
+            print(f"Successfully connected to the PostgreSQL database.{DATABASE_URI}")
+        except psycopg2.Error as e:
+            print(f"Error connecting to the database: {e}")
+            conn = None
+        return conn
+
+    def create_db_connection_credentials(self,host,database,user,password,port):
+        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=port)
+        print(f"Successfully connected to the PostgreSQL database.{database}")
         return conn
 
     
@@ -215,5 +261,14 @@ class Database:
                 where user_id=%s;
         """
         result = self.fetch_data_handler(query, (user_id,), fetch_all=True)
+        return result
+
+    #params=>chat_created_timestamp,latitude,longitude,elevation
+    #this function will be called to add a new row to scan_history_chat table
+    #it will return True if the scan chat history is added successfully
+    #it will return False if the scan chat history is not added successfully
+    def add_scan_history_chat(self,timestamp,latitude,longitude,elevation):
+        query = 'insert into scan_history_chat(chat_created_timestamp,latitude,longitude,elevation) values (%s,%s,%s,%s);'
+        result = self.input_error_handler(query, (timestamp,latitude,longitude,elevation))
         return result
 
