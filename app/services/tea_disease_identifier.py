@@ -80,7 +80,8 @@ class TeaDiseaseIdentifier:
         pixel_count_arr = self.predict(img) # call to get the Yolo result.it returns mask as numpy array
         infection_percentage = self.claculate_infection_percentage(pixel_count_arr)
         disease_name = self.get_disease_name(pixel_count_arr)
-        return disease_name, float(infection_percentage)
+        severity_level=self.get_severity_level(infection_percentage)
+        return disease_name, float(infection_percentage),severity_level
     
     #params=> infection percentage
     #this function categorizes the severity of the infection based on the percentage of infection.
@@ -104,9 +105,9 @@ class TeaDiseaseIdentifier:
 #when using the get_severity_level function, the infection percentage should be the infection percentage returned by the get_disease function.
 #must pass the infection percentage as a float.
 
-
-teaDiseaseIdentifier=TeaDiseaseIdentifier('app/models/tea_disease_identifier_weight.pt', './static/uploaded_leaves/')
+'''
+teaDiseaseIdentifier=TeaDiseaseIdentifier()
 result=teaDiseaseIdentifier.get_disease('Blister_Blight_dt5_00065.jpg')
 print(result)
-print(teaDiseaseIdentifier.get_severity_level(result[1]))
+'''
 
