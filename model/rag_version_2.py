@@ -28,6 +28,7 @@ class TeaDiseaseRAG:
         else:
             logging.info(f"Database loaded with {self.collection.count()} records.")
 
+
     def ingest_data(self):
         # Reads Excel and create the ChromaDB collection.
         if not os.path.exists(self.excel_path):
@@ -93,3 +94,12 @@ class TeaDiseaseRAG:
                 ids = ids
             )
             logging.info(f"Successfully ingested {len(documents)} records.")
+
+
+    def log_request(self, query, severity, location, disease, confidence, response):
+        file_exists = os.path.isfile("rag_log.csv")
+        with open("rag_log.csv", "a", newline = '', encoding = 'utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
+            writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
