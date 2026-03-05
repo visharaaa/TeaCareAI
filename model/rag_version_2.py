@@ -96,15 +96,6 @@ class TeaDiseaseRAG:
             logging.info(f"Successfully ingested {len(documents)} records.")
 
 
-    def log_request(self, query, severity, location, disease, confidence, response):
-        file_exists = os.path.isfile("rag_log.csv")
-        with open("rag_log.csv", "a", newline = '', encoding = 'utf-8') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
-            writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
-
-
     def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
         query = f"{disease_name} {severity_level}"
         query_embedding = self.embedder.encode(query).tolist()
@@ -194,5 +185,30 @@ class TeaDiseaseRAG:
         }
 
 
+    def log_request(self, query, severity, location, disease, confidence, response):
+        file_exists = os.path.isfile("rag_log.csv")
+        with open("rag_log.csv", "a", newline = '', encoding = 'utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
+            writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
+
+
+if __name__ == "__main__":
+    # System initialization
+    rag_system = TeaDiseaseRAG(
+        excel_path = "../data_folder/treatments_data_v2.xlsx",
+        db_path = "chroma_DB"
+    )
+
+    # Run example query
+    result = rag_system.get_recommendation(
+        disease_name = "Blister Blight",
+        severity_level = "medium",
+        location = "Hatton"
+    )
+
+    print("\nLLM response:")
+    print(result.get('llm_response', result.get('message')))
 
 
