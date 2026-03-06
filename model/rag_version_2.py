@@ -194,6 +194,12 @@ class TeaDiseaseRAG:
             writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
 
 
+    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
+        respond = self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
+        response = (respond.get("llm_response"), respond.get("confidence"))
+        return response
+
+
 if __name__ == "__main__":
     # System initialization
     rag_system = TeaDiseaseRAG(
@@ -204,7 +210,7 @@ if __name__ == "__main__":
     # Run example query
     result = rag_system.get_recommendation(
         disease_name = "Blister Blight",
-        severity_level = "medium",
+        severity_level = "high",
         location = "Hatton"
     )
 
