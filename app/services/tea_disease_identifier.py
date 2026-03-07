@@ -35,34 +35,41 @@ class TeaDiseaseIdentifier:
     #this function takes an image name as input, constructs the path to the image, and uses the YOLO model to make predictions on the image.
     # It initializes an array pixel_count_arr to store the pixel counts for each class to find thr infected area.
     def predict(self,img):
+        masks=[]
+        lesion_count=0
         path=os.path.join(self.imgPath,img)
         results = self.model(source=path,conf=0.25)
-        #annotated_image = results[0].plot()
-        #print('result.masks', (results[0].masks).shape)
         pixel_count_arr=np.zeros((len(self.names)),dtype=int)
         for result in results:
             infected_area_polgons=result.masks
-            #print('infected_area_polgons', infected_area_polgons.shape)
-            #print('infected_area_polgons', infected_area_polgons.shape[0])
+            confident_list=result.boxes.conf.tolist()
             for raw_mask_id in range(infected_area_polgons.shape[0]):
+                mask=infected_area_polgons[raw_mask_id].xy[0]
+                conf=confident_list[raw_mask_id]
                 raw_mask_numpy = infected_area_polgons[raw_mask_id].data.cpu().numpy()[0]
-                #print('raw_mask_numpy', raw_mask_numpy.shape)
-                #print(raw_mask_id)
                 class_id=int(result.boxes.cls[raw_mask_id])
+                class_name=self.names[class_id]
+                masks.append(self.save_pologon(class_name,conf,mask))
+                lesion_count+=self.lesion_counter(class_id)
                 pixel_count_arr+=self.pixel_adder(class_id,self.count_pixels(raw_mask_numpy))
-        return pixel_count_arr
-    
+        return pixel_count_arr,sum(confident_list)/len(confident_list),lesion_count,masks
+
+    def lesion_counter(self,class_id):
+        if self.names[class_id] != 'leaf':
+            return 1
+        return 0
+
     #params=> pixel count array of each class
     #this function calculates the percentage of infection for each class based on the pixel counts. 
     #It first calculates the total number of pixels by summing the pixel counts. If the total is zero, it returns 0 to avoid division by zero.
     def claculate_infection_percentage(self, pixel_count_arr):
         total_pixels = pixel_count_arr.sum()
         if total_pixels == 0:
-            return 0
+            return 0,0,0
         pixel_count_arr[0]=0 #to ignore the healthy area
         pixel_count=pixel_count_arr.sum()
         infection_percentages = (pixel_count / total_pixels) * 100
-        return np.round(infection_percentages,2)
+        return total_pixels,pixel_count,np.round(infection_percentages,2)
 
     
     #params=> pixel count array of each class as numpy array
@@ -71,17 +78,34 @@ class TeaDiseaseIdentifier:
         pixel_count_arr[0]=0 #to ignore the healthy area
         disease_index = np.argmax(pixel_count_arr)
         return self.names[disease_index]
+
+    def save_pologon(self,class_id,confidence,mask):
+        bbox_data={
+            "class_id": class_id,
+            "confidence": round(confidence, 4),
+            "mask":mask
+        }
+        return bbox_data
     
     #param=> image file name
     #this function combines the previous functions to get both the disease name and the infection percentage for a given image. 
     # It first calls the predict function to get the pixel count array, then uses that array to determine the disease name and calculate the infection percentage. 
     # Finally, it returns both the disease name and the infection percentage as a tuple.
     def get_disease(self, img):
-        pixel_count_arr = self.predict(img) # call to get the Yolo result.it returns mask as numpy array
-        infection_percentage = self.claculate_infection_percentage(pixel_count_arr)
+        pixel_count_arr,confident,lesion_count, masks= self.predict(img) # call to get the Yolo result.it returns mask as numpy array
+        healthy_leaf_area,affected_area,infection_percentage = self.claculate_infection_percentage(pixel_count_arr)
         disease_name = self.get_disease_name(pixel_count_arr)
         severity_level=self.get_severity_level(infection_percentage)
-        return disease_name, float(infection_percentage),severity_level
+        return {
+            "disease_name":disease_name,
+            "confident":confident,
+            "infection_percentage":float(infection_percentage),
+            "severity_level":severity_level,
+            "healthy_leaf_area":healthy_leaf_area,
+            "affected_area":affected_area,
+            "lesion_count":lesion_count,
+            "masks":masks
+        }
     
     #params=> infection percentage
     #this function categorizes the severity of the infection based on the percentage of infection.

@@ -30,7 +30,7 @@ class LeafEvaluator:
         pred = self.model.predict(X_scaled, verbose=0)[0][0]
         return round(pred, 2)
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
         evaluator = LeafEvaluator()
 
         leaf_input = {
@@ -48,3 +48,4 @@ if __name__ == "__main__":
 
         prediction = evaluator.predict_improvement(leaf_input)
         print(f"Predicted Health Improvement: {prediction:.2f}%")
+"""

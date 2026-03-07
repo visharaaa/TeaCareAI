@@ -1,20 +1,35 @@
-from flask import url_for
-from app.database.db import Database
-from app.services.tea_disease_identifier import TeaDiseaseIdentifier
-from app.services.treatment_recommendations import TeaDiseaseRAG
-from config import Config
+from flask import url_for,jsonify
 import os
 from datetime import datetime
 import threading
 import queue
+import bcrypt
+from datetime import timedelta
+import requests
+from psycopg2.extras import Json
+
+
+from app.database.db import Database
+from app.services.tea_disease_identifier import TeaDiseaseIdentifier
+from app.services.treatment_recommendations import TeaDiseaseRAG
+from app.services.recovery_tracker import LeafEvaluator
+from config import Config
+
 
 db = Database()
-user_id=1
 
 
 threading_lock= threading.Lock()
 vision_queue = queue.Queue()
 rag_queue = queue.Queue()
+NN_queue = queue.Queue()
+
+
+
+code_lock = threading.Lock()
+
+
+
 
 
 
@@ -22,22 +37,20 @@ def tea_disease_identifier_worker():
     print("Background TeaDiseaseIdentifier worker starting...")
 
     # Load the model into new object
-    tea_disease_identifier=TeaDiseaseIdentifier('./app/models/tea_disease_identifier_weight.pt','./static/uploaded_leaves')
+    tea_disease_identifier=TeaDiseaseIdentifier(Config.TEA_DISEASE_IDENTIFIER_MODEL_PATH,Config.UPLOAD_FOLDER)
 
     print("TeaDiseaseIdentifier Model loaded successfully! Worker is ready.")
 
     while True:
 
         #get the next image  from the queue
-        file_path,response_queue=vision_queue.get()
+        file_name,response_queue=vision_queue.get()
 
         # Wait for the tread to be completely free
         with threading_lock:
             try:
                 # Process the one image.
-                disease_name,infection_percentage,severity_level=tea_disease_identifier.get_disease(file_path)
-
-                result=(disease_name,infection_percentage,severity_level)
+                result=tea_disease_identifier.get_disease(file_name)
 
                 # Put the result into this specific user's private pager
                 response_queue.put(result)
@@ -46,52 +59,136 @@ def tea_disease_identifier_worker():
                 # If the model crashes on a bad image, send the error back
                 response_queue.put(Exception(f"Error processing image: {str(e)}"))
 
-
         # Tell the main waiting room this task is officially done
         vision_queue.task_done()
 
 
 
-
-
-def predict(img, latitude=10, longitude=20,elevation=2):
+def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevation=2):
     if not os.path.exists(Config.UPLOAD_FOLDER):
         os.makedirs(Config.UPLOAD_FOLDER)
 
-    #chat_code=generate_unique_code('chat')
+
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"{timestamp}_{img.filename}"
     file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
     img.save(file_path)
 
     # Create a private pager just for THIS specific web request
-    response_queue = queue.Queue()
+    response_vision_queue = queue.Queue()
+    response_rag_queue=queue.Queue()
+    response_NN_queue=queue.Queue()
+
 
     # Put the filename and the private pager into the task_queue
-    vision_queue.put((filename, response_queue))
+    vision_queue.put((filename, response_vision_queue))
 
     # The Flask route pauses right here and waits for the worker to finish the math
-    result = response_queue.get()
+    vision_result = response_vision_queue.get()
+
+    # prediction from disease identifier
+    disease_name=vision_result["disease_name"]
+    disease_identifier_confidence_score=round(vision_result["confident"],4)
+    infection_percentage=vision_result["infection_percentage"]
+    severity_level=vision_result["severity_level"]
+    healthy_leaf_area=vision_result["healthy_leaf_area"]
+    affected_area=vision_result["affected_area"]
+    lesion_count=vision_result["lesion_count"]
+    masks={'test':'Pass'}
 
     # check: Did the worker return an error?
-    if isinstance(result, Exception):
-        print(f"Prediction failed: {result}")
+    if isinstance(vision_result, Exception):
+        print(f"Prediction failed: {vision_result}")
         return {'error': 'Failed to process image'}
 
+    # input for recovery_tracker
+    rag_input=(disease_name,severity_level)
+    rag_queue.put((rag_input, response_rag_queue))
+
+    recovery_percentage=0
+    already_has=True
+    status = 'new'
+
+    if already_has:
+
+        #get whether data like humidity and temperature
+        whether_data=get_weather_data(latitude,longitude)
+
+        # input for NN
+        NN_input = {
+            'healthy_leaf_area': healthy_leaf_area,
+            'affected_area_pre': 400,
+            'affected_area_post': 120,
+            'humidity_pct': whether_data['humidity'],
+            'temp_celsius': whether_data['temperature'],
+            'blister_blight': 0,
+            'brown_blight': 0,
+            'grey_blight': 0,
+            'red_rust': 0,
+            'helopeltis': 0
+        }
+
+        NN_input[disease_name]=1
+
+        NN_queue.put((NN_input, response_NN_queue))
+
+        # prediction from disease identifier
+        NN_result = response_NN_queue.get()
+
+        if isinstance(NN_result, Exception):
+            print(f"Prediction failed: {NN_result}")
+            return {'error': 'Failed to process Neural Network'}
+
+        recovery_percentage = NN_result
+
+    # prediction from disease identifier
+    rag_result = response_rag_queue.get()
+
+    if isinstance(rag_result, Exception):
+        print(f"Prediction failed: {rag_result}")
+        return {'error': 'Failed to get response RAG'}
+
+
     #print(result)
-    disease_name, infection_percentage, severity_level,*extra_stuff = result
+    print(f"rag_result : {rag_result}")
+    print(f"NN_result : {NN_result}")
+
+    llm_response, RAG_confidence_score=rag_result
+    print(f"recovery_percentage : {recovery_percentage}")
 
     # save to database
     try:
-        #db.add_scan_history_chat(chat_code=generate_code('chat'),timestamp=datetime.now(),latitude=latitude,longitude=longitude,elevation=elevation)
-        print("added to db")
+        save_data(user_id=user_id,
+                  field_id=field_id,
+                  chat_code=chat_code,
+                  latitude=latitude,
+                  longitude=longitude,
+                  elevation=elevation,
+                  disease_name=disease_name,
+                  disease_identifier_confidence_score=float(disease_identifier_confidence_score),
+                  bounding_box=masks,
+                  severity_level=str(severity_level).lower(),
+                  lesion_count=int(lesion_count),
+                  healthy_leaf_area=int(healthy_leaf_area),
+                  affected_area=int(affected_area),
+                  image_name=str(filename),
+                  RAG_confidence_score=float(RAG_confidence_score),
+                  generated_advice=llm_response,
+                  status=str(status),
+                  recovery_percentage=float(recovery_percentage)
+                  )
     except Exception as e:
         print(f"Warning: could not save to DB: {e}")
 
     result = {
-        'status':     disease_name,
-        'confidence': str(infection_percentage) + '%',
-        'treatment':  'Remove infected leaves. Apply a sulfur-based fungicide or neem oil spray directly to the foliage.'
+        'status':     standardize_disease_name(disease_name),
+        'confidence': str(disease_identifier_confidence_score*100) + '%',
+        'treatment':  llm_response,
+        'recommendation_code': 1,
+        'recovery_percentage': str(recovery_percentage),
+        'barcode': chat_code,
+        'location': f"{latitude},{longitude}",
+        'recovery':recovery_percentage
     }
     return result
 
@@ -115,6 +212,7 @@ def tea_disease_rag_worker():
             try:
                 #getting the recommendations
                 llm_response,confidence=tea_disease_rag.get_treatment(disease_name, severity_level)
+
                 result=(llm_response,confidence)
                 response.put(result)
 
@@ -122,55 +220,77 @@ def tea_disease_rag_worker():
                 # If the model crashes, send the error back
                 response.put(Exception(f"Error processing image: {str(e)}"))
 
-        vision_queue.task_done()
+        rag_queue.task_done()
 
 
+def recovery_tracker_worker():
+    print("Background RecoveryTracker worker starting...")
+    recovery_tracker=LeafEvaluator(
+        model_path=Config.NN_MODEL_PATH,
+        scaler_path=Config.NN_SCALER_PATH,
+        feature_path=Config.NN_FEATURE_COLUMNS_PATH
+    )
+    print("LeafEvaluator Model loaded successfully! Worker is ready.")
+    while True:
+        try:
+            inputs,response=NN_queue.get()
+            leaf_input = {
+            'Total_Leaf_Area_mm2': inputs['healthy_leaf_area'],
+            'Affected_Area_Pre': inputs['affected_area_pre'],
+            'Affected_Area_Post': inputs['affected_area_post'],
+            'Humidity_Pct': inputs['humidity_pct'],
+            'Temp_Celsius': inputs['temp_celsius'],
+            'Disease_Type_Blister Blight': inputs['blister_blight'],
+            'Disease_Type_Brown Blight': inputs['brown_blight'],
+            'Disease_Type_Grey Blight': inputs['grey_blight'],
+            'Disease_Type_Red Rust': inputs['red_rust'],
+            'Disease_Type_Red Spider': inputs['helopeltis'],
+        }
 
+
+            prediction=recovery_tracker.predict_improvement(leaf_input)
+            if prediction>=100:
+                prediction=100
+            response.put(prediction)
+
+        except Exception as e:
+            # If the model crashes on a bad image, send the error back
+            response.put(Exception(f"Error processing image: {str(e)}"))
+
+        finally:
+            NN_queue.task_done()
+
+def register_user(user_name, email, password, user_type):
+    """Hash password with bcrypt, auto-generate user_code, insert into users."""
+
+    #checking if the user already exists
+    existing = db.check_email_exists(email)
+    if existing:
+        return False, "An account with this email already exists."
+
+    #get new user_code
+    user_code = db.get_new_user_code()
+
+    # Hash password with bcrypt
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    #inserting the user into the database
+    result =db.add_user(user_code, user_name, email, hashed, user_type)
+
+    return (True, None) if result else (False, "Could not create account. Please try again.")
 
 #initialize the threads
 tea_disease_identifier_worker_thread = threading.Thread(target=tea_disease_identifier_worker, daemon=True) ## daemon=True means this thread will automatically shut down when kill the Flask server
 tea_disease_rag_worker_thread=threading.Thread(target=tea_disease_rag_worker,daemon=True)
+tea_recovery_tracker_worker_thread=threading.Thread(target=recovery_tracker_worker,daemon=True)
 
 #start the threads in background processing
 tea_disease_identifier_worker_thread.start()
 tea_disease_rag_worker_thread.start()
+tea_recovery_tracker_worker_thread.start()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def load_user_chat():
+def load_user_chat(user_id):
     records = db.get_user_chat_history_by_user_id(user_id)
     data = []
     for record in records:
@@ -195,62 +315,192 @@ def load_user_chat():
     print(data)
     return data
 
+def get_secret_key():
+    return Config.SECRET_KEY
+
+def get_session_lifetime():
+    return timedelta(hours=Config.SESSION_LIFETIME)
+
+def add_field_to_db(user_id, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age):
+
+    # add field to the database
+    result = db.add_field(
+        user_id=user_id,
+        field_name=field_name,
+        field_latitude=field_latitude,
+        field_longitude=field_longitude,
+        field_elevation=field_elevation,
+        tea_variety=tea_variety,
+        plant_age_in_years=plant_age
+    )
+
+    return result
 
 
+def get_users_field_details(user_id):
+    result=db.get_field_names_by_user_id(user_id)
+    return result
 
 
-#params=>none
-#this function read the code.txt to get the last code of each type
-#return=>dict
-def load_codes():
-    with open('./code.txt', 'r') as f:
-        id['chat_code'] = int(f.readline())
-        id['scan_code'] = int(f.readline())
-        id['recommendation_code'] = int(f.readline())
-        id['detection_code'] = int(f.readline())
-    return id
-
-#params=>none
-#this function write the code.txt to save the last code of each type
-def save_codes(id):
-    with open('./code.txt', 'w') as f:
-        f.write(str(id['chat_code']) + '\n')
-        f.write(str(id['scan_code']) + '\n')
-        f.write(str(id['recommendation_code']) + '\n')
-        f.write(str(id['detection_code']) + '\n')
+def standardize_disease_name(disease_name):
+    match disease_name:
+        case 'blister_blight':
+            return 'Blister Blight'
+        case 'brown_blight':
+            return 'Brown Blight'
+        case 'grey_blight':
+            return 'Grey Blight'
+        case 'helopeltis':
+            return 'Helopeltis'
+        case 'red_rust':
+            return 'Red Rust'
+        case _:
+            return disease_name
 
 
-code_lock = threading.Lock()
-generate_unique_code_lock = threading.Lock()
+#scan_id and chat code are the same
+def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:dict,severity_level:str,lesion_count:int,
+              healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
 
-def generate_unique_code(code_type):
-    with generate_unique_code_lock:
-        try:    
-            # 1. Load current codes
-            codes = load_codes()
+    #check the chat_code is already exist if result is None it means this is the first time of detection
+
+    # Check if the chat_code already exists
+    result=db.get_scan_chat_history_by_chat_code(chat_code)
+
+    added=False
+    scan_id = None
+    already_there=False
+
+    if result:
+        # If it exists, extract the integer scan_id
+        scan_id = result.get('scan_id')
+        already_there=True
+    else:
+        creation_result = None
+        try:
+            # create a new chat
+            creation_result=db.add_scan_history_chat(
+                chat_code=chat_code,
+                timestamp=datetime.now(),
+                latitude=latitude,
+                longitude=longitude,
+                elevation=elevation
+            )
+            print("New scan created")
+            added=True
         except Exception as e:
-            print(f"Warning: could not load codes: {e}")
-            codes = {'chat_code': 0, 'scan_code': 0, 'recommendation_code': 0, 'detection_code': 0}
-        
-        # 2. Increment the specific counter
-        if code_type == 'chat':
-            codes['chat_code'] += 1
-            new_code = f"C_{codes['chat_code']:09d}"
-        elif code_type == 'scan':
-            codes['scan_code'] += 1
-            new_code = f"S_{codes['scan_code']:09d}"
-        elif code_type == 'recommendation':
-            codes['recommendation_code'] += 1
-            new_code = f"R_{codes['recommendation_code']:09d}"
-        elif code_type == 'detection':
-            codes['detection_code'] += 1
-            new_code = f"D_{codes['detection_code']:09d}"
+            print(e)
+        finally:
+            if not creation_result:
+                return False,'Error when creating new scan history.'
+
+        new_record = db.get_scan_chat_history_by_chat_code(chat_code)
+        if new_record:
+            scan_id = new_record.get('scan_id')
         else:
-            raise ValueError("Invalid code type")
-            
-        # 3. Save updated codes
-        save_codes(codes)
-    return new_code
+            return False, 'Error retrieving new scan ID.'
+
+    user_scan_result = None
+
+    if not already_there:
+        try:
+            #add the values to user_scan_history which table create relationship between user,field and scan_history_chat tables
+            user_scan_result=db.add_user_scan_history(user_id, field_id, scan_id)
+        except Exception as e:
+            print(e)
+        finally:
+            if (not user_scan_result) and added:
+                # delete the row which is last added
+                db.remove_scan_history_chat_by_chat_code(chat_code)
+                return False,'Error when linking user to scan history.'
+
+    disease_id = None
+
+    try:
+        # get the disease_id for the disease_name
+        disease_id=db.get_disease_id_by_disease_name(standardize_disease_name(disease_name))
+
+        #remove the currently added records
+        #elimate the function if didn't return any id
+    except Exception as e:
+        print(e)
+    finally:
+        if not disease_id:
+            if added:
+                db.remove_scan_history_chat_by_chat_code(chat_code)
+            return False,'Disease mismatch.'
 
 
+    detection_result = None
+    try:
 
+        #get new detection_id and detection_code
+        detection_id,detection_code=db.get_new_detection_code()
+        # print(bounding_box)
+        #
+        # for i in range(len(bounding_box)):
+        #     bounding_box[i]['mask'] = bounding_box[i]['mask'].tolist()
+        #     bounding_box[i]['mask'] = Json(bounding_box[i]['mask'])
+        #
+        # bounding_box = Json(bounding_box)
+        # bounding_box = jsonify(bounding_box)
+        # print(bounding_box)
+
+        # store the output from disease_identifier  and recovery traker
+        detection_result = db.add_detection(
+            detection_id=detection_id,
+            detection_code=detection_code,
+            scan_id=scan_id,
+            disease_id=disease_id,
+            confidence_score=disease_identifier_confidence_score,
+            bounding_box=Json(status),
+            severity_level=severity_level,
+            lesion_count=lesion_count,
+            healthy_leaf_area=healthy_leaf_area,
+            affected_area=affected_area,
+            image_name=image_name,
+            recovery_percentage=recovery_percentage,
+            status=status
+        )
+    except Exception as e:
+        print(e)
+    finally:
+        if not detection_result:
+            if added:
+                db.remove_scan_history_chat_by_chat_code(chat_code)
+            return False,'Error when adding new detection.'
+
+    recommendation_result = None
+    try:
+        # get new recommendation_id and recommendation_code
+        recommendation_id,recommendation_code=db.get_new_recommendation_code()
+
+        recommendation_result=db.add_recommended_treatment(
+            recommendation_id=recommendation_id,
+            recommendation_code=recommendation_code,
+            generated_advice=generated_advice,
+            RAG_confidence_score=RAG_confidence_score
+        )
+    except Exception as e:
+        print(e)
+
+    finally:
+        if not recommendation_result:
+            print('Deleting recommendation...')
+            db.remove_detection_by_detection_id(detection_id)
+            if added:
+                db.remove_scan_history_chat_by_chat_code(chat_code)
+            return False,'Error when storing treatment.'
+
+    print("added to db")
+    return True,'Data added successfully.'
+
+
+def get_weather_data(latitude,longitude):
+    response = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={Config.OPENWEATHERMAP_API_KEY}")
+    response=response.json()
+    humidity=response['main']['humidity']
+    temperature=response['main']['temp']
+    temperature-=273.15
+    print(temperature)
+    return {'humidity':humidity, 'temperature':temperature}
