@@ -85,3 +85,25 @@ header img {
     background: var(--primary);
     border-radius: 2px;
 }
+
+/* ── Auth state ── */
+.header-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    padding: 0 10px;
+    opacity: 0.85;
+}
+
+.logout-btn {
+    color: #c0392b !important;
+}
+
+.logout-btn:hover {
+    background: rgba(192, 57, 43, 0.08) !important;
+    color: #c0392b !important;
+}
+
+.logout-btn::after {
+    background: #c0392b !important;
+}

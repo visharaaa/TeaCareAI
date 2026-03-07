@@ -574,3 +574,54 @@
     background: var(--primary-tint);
     border-color: var(--primary);
 }
+
+/* Location detect button */
+.detect-location-btn {
+    width: 100%;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--primary-tint, #f0fdf4);
+    border: 1.5px solid #bbf7d0;
+    border-radius: 8px;
+    color: #166534;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.detect-location-btn:hover:not(:disabled) {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+.detect-location-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.detect-location-btn.detecting svg {
+    animation: loc-spin 0.8s linear infinite;
+}
+
+.detect-location-btn.detected {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #166534;
+}
+
+@keyframes loc-spin { to { transform: rotate(360deg); } }
+
+/* Coordinates display below button */
+.location-coords {
+    font-size: 11.5px;
+    color: #6b7a6b;
+    margin-top: 5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}

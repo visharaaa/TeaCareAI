@@ -3,23 +3,377 @@
 {% block title %}Sign Up - PlantCare AI{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{{url_for('static',filename='css/signup.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/signup.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: 'DM Sans', sans-serif; }
+
+.signup-container {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    background: #f5f7f2;
+}
+
+/* ── LEFT PANEL ── */
+.signup-panel {
+    position: relative;
+    background: #0f2d1a;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 60px 48px;
+}
+
+.signup-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 110% 20%, rgba(34,139,60,0.45) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at -10% 80%, rgba(21,127,60,0.3) 0%, transparent 65%);
+}
+
+.panel-content { position: relative; z-index: 2; }
+
+.panel-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 56px;
+}
+
+.panel-logo svg { color: #4ade80; }
+
+.panel-logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: #fff;
+    letter-spacing: 0.01em;
+}
+
+.panel-content h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 38px;
+    line-height: 1.15;
+    color: #fff;
+    margin-bottom: 16px;
+}
+
+.panel-content h2 em {
+    font-style: italic;
+    color: #4ade80;
+}
+
+.panel-content > p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.65;
+    margin-bottom: 48px;
+    font-weight: 300;
+}
+
+.panel-features { display: flex; flex-direction: column; gap: 20px; }
+
+.panel-feature {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.pf-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4ade80;
+    flex-shrink: 0;
+}
+
+.panel-feature span:last-child {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 400;
+}
+
+.leaf-deco {
+    position: absolute;
+    bottom: -40px;
+    right: -60px;
+    width: 280px;
+    height: 280px;
+    opacity: 0.06;
+    z-index: 1;
+}
+
+/* ── RIGHT FORM ── */
+.signup-form-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 40px;
+    overflow-y: auto;
+}
+
+.signup-box {
+    width: 100%;
+    max-width: 520px;
+}
+
+.signup-header { margin-bottom: 36px; }
+
+.signup-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    color: #0f2d1a;
+    margin-bottom: 6px;
+}
+
+.signup-header p {
+    font-size: 14px;
+    color: #6b7a6b;
+}
+
+/* Alert */
+.alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+
+/* Form */
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.input-group { margin-bottom: 18px; }
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2d4a2d;
+    margin-bottom: 7px;
+    letter-spacing: 0.01em;
+}
+
+.optional {
+    font-weight: 400;
+    color: #9bab9b;
+    font-size: 12px;
+}
+
+.input-wrap { position: relative; }
+
+.input-wrap input,
+.input-group input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #d4e0d4;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    color: #1a2e1a;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.input-wrap input:focus,
+.input-group input:focus {
+    border-color: #22863c;
+    box-shadow: 0 0 0 3px rgba(34,134,60,0.1);
+}
+
+.input-wrap input { padding-right: 44px; }
+
+.toggle-pw {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9bab9b;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+.toggle-pw:hover { color: #22863c; }
+
+/* Password strength */
+.pw-strength { margin-top: 8px; display: flex; align-items: center; gap: 10px; }
+.pw-bar { flex: 1; height: 4px; background: #e8ede8; border-radius: 99px; overflow: hidden; }
+.pw-fill { height: 100%; width: 0; border-radius: 99px; transition: width 0.3s, background 0.3s; }
+#pw-label { font-size: 12px; color: #9bab9b; min-width: 52px; font-weight: 500; }
+
+.match-msg { font-size: 12px; margin-top: 6px; font-weight: 500; }
+
+/* User type selector */
+.user-type-group { margin-bottom: 18px; }
+.user-type-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2d4a2d;
+    margin-bottom: 7px;
+}
+.user-type-options { display: flex; gap: 10px; }
+
+.type-option { flex: 1; }
+.type-option input[type="radio"] { display: none; }
+.type-option label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 1.5px solid #d4e0d4;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: #4a6a4a;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: #fff;
+    text-align: center;
+}
+.type-option label svg { color: #9bab9b; transition: color 0.2s; }
+.type-option input[type="radio"]:checked + label {
+    border-color: #22863c;
+    background: #f0fdf4;
+    color: #166534;
+    box-shadow: 0 0 0 3px rgba(34,134,60,0.08);
+}
+.type-option input[type="radio"]:checked + label svg { color: #22863c; }
+
+/* Checkbox */
+.checkbox-group { margin-bottom: 24px; }
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #4a6a4a;
+    line-height: 1.5;
+}
+.checkbox-label input[type="checkbox"] { display: none; }
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #d4e0d4;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    background: #fff;
+}
+.checkbox-label input:checked ~ .checkmark {
+    background: #22863c;
+    border-color: #22863c;
+}
+.checkbox-label a { color: #22863c; text-decoration: none; font-weight: 500; }
+.checkbox-label a:hover { text-decoration: underline; }
+
+/* Button */
+.signup-btn {
+    width: 100%;
+    padding: 13px 24px;
+    background: #0f2d1a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, transform 0.15s;
+    margin-bottom: 20px;
+}
+.signup-btn:hover:not(:disabled) { background: #1a4a2a; transform: translateY(-1px); }
+.signup-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+.footer-text {
+    text-align: center;
+    font-size: 14px;
+    color: #6b7a6b;
+}
+.footer-text span {
+    color: #22863c;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* Spinner */
+.spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+    .signup-container { grid-template-columns: 1fr; }
+    .signup-panel { display: none; }
+    .signup-form-wrap { padding: 32px 20px; }
+    .input-row { grid-template-columns: 1fr; }
+    .user-type-options { flex-wrap: wrap; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-
 <div class="signup-container">
 
     <!-- Left panel -->
     <div class="signup-panel">
         <div class="panel-content">
-            <h2>Join PlantCare AI</h2>
-            <p>Start protecting your plants with the power of artificial intelligence — free, instant, and accurate.</p>
+            <div class="panel-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                </svg>
+                <span class="panel-logo-text">PlantCare AI</span>
+            </div>
+
+            <h2>Protect your <em>harvest</em> with AI</h2>
+            <p>Join thousands of farmers and agronomists using AI to detect diseases early and save their crops.</p>
+
             <div class="panel-features">
                 <div class="panel-feature">
                     <span class="pf-icon">
-                        <!-- Zap / AI -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
                         </svg>
                     </span>
@@ -27,8 +381,8 @@
                 </div>
                 <div class="panel-feature">
                     <span class="pf-icon">
-                        <!-- Map pin -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                             <circle cx="12" cy="10" r="3"/>
                         </svg>
@@ -37,78 +391,133 @@
                 </div>
                 <div class="panel-feature">
                     <span class="pf-icon">
-                        <!-- History clock -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                            <path d="M3 3v5h5"/>
-                            <path d="M12 7v5l4 2"/>
+                            <path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
                         </svg>
                     </span>
                     <span>Full scan history &amp; reports</span>
                 </div>
                 <div class="panel-feature">
                     <span class="pf-icon">
-                        <!-- File text -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>
                             <line x1="16" x2="8" y1="13" y2="13"/>
                             <line x1="16" x2="8" y1="17" y2="17"/>
-                            <line x1="10" x2="8" y1="9" y2="9"/>
                         </svg>
                     </span>
                     <span>Instant treatment plans</span>
                 </div>
             </div>
         </div>
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
+
+        <!-- decorative leaf -->
+        <svg class="leaf-deco" viewBox="0 0 200 200" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M100 10 C140 10 190 50 190 100 C190 150 150 190 100 190 C50 190 10 150 10 100 C10 50 60 10 100 10 Z"/>
+        </svg>
     </div>
 
     <!-- Right: form -->
     <div class="signup-form-wrap">
         <div class="signup-box">
             <div class="signup-header">
-                <h2>Create Account</h2>
-                <p>Fill in your details to get started</p>
+                <h2>Create your account</h2>
+                <p>Fill in your details to get started for free</p>
             </div>
 
-            <form onsubmit="handleSignup(event)">
+            {% if error %}
+            <div class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                </svg>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {{ success }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('signup') }}" id="signup-form">
 
                 <div class="input-row">
                     <div class="input-group">
                         <label for="first-name">First Name</label>
-                        <div class="input-wrap">
-                            <input type="text" id="first-name" placeholder="Vishara" required>
-                        </div>
+                        <input type="text" id="first-name" name="first_name"
+                               placeholder="Kamal" required
+                               value="{{ request.form.get('first_name', '') }}">
                     </div>
                     <div class="input-group">
                         <label for="last-name">Last Name</label>
-                        <div class="input-wrap">
-                            <input type="text" id="last-name" placeholder="Perera" required>
-                        </div>
+                        <input type="text" id="last-name" name="last_name"
+                               placeholder="Perera" required
+                               value="{{ request.form.get('last_name', '') }}">
                     </div>
                 </div>
 
                 <div class="input-group">
                     <label for="email">Email Address</label>
-                    <div class="input-wrap">
-                        <input type="email" id="email" placeholder="farmer@example.com" required>
-                    </div>
+                    <input type="email" id="email" name="email"
+                           placeholder="farmer@example.com" required
+                           value="{{ request.form.get('email', '') }}">
                 </div>
 
-                <div class="input-group">
-                    <label for="phone">Phone Number <span class="optional">(optional)</span></label>
-                    <div class="input-wrap">
-                        <input type="tel" id="phone" placeholder="+94 71 000 0000">
+                <!-- User type -->
+                <div class="user-type-group">
+                    <label>Account Type</label>
+                    <div class="user-type-options">
+                        <div class="type-option">
+                            <input type="radio" id="type-farmer" name="user_type" value="farmer" checked>
+                            <label for="type-farmer">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                                </svg>
+                                Farmer
+                            </label>
+                        </div>
+                        <div class="type-option">
+                            <input type="radio" id="type-agronomist" name="user_type" value="agronomist">
+                            <label for="type-agronomist">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                </svg>
+                                Agronomist
+                            </label>
+                        </div>
+                        <div class="type-option">
+                            <input type="radio" id="type-state" name="user_type" value="state">
+                            <label for="type-state">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+                                    <path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
+                                </svg>
+                                State Officer
+                            </label>
+                        </div>
                     </div>
                 </div>
 
                 <div class="input-group">
                     <label for="password">Password</label>
                     <div class="input-wrap">
-                        <input type="password" id="password" placeholder="Min. 8 characters" required>
-                        <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1" aria-label="Toggle visibility">
+                        <input type="password" id="password" name="password"
+                               placeholder="Min. 8 characters" required>
+                        <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1">
                             <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
@@ -134,7 +543,8 @@
                 <div class="input-group">
                     <label for="confirm-password">Confirm Password</label>
                     <div class="input-wrap">
-                        <input type="password" id="confirm-password" placeholder="Repeat your password" required>
+                        <input type="password" id="confirm-password"
+                               placeholder="Repeat your password" required>
                     </div>
                     <p class="match-msg" id="match-msg"></p>
                 </div>
@@ -153,22 +563,21 @@
                 </div>
 
                 <button type="submit" class="signup-btn" id="signup-btn">
+                    <span class="spinner" id="spinner"></span>
                     <span id="signup-btn-text">Create Account</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg id="btn-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                     </svg>
                 </button>
-
             </form>
 
             <p class="footer-text">Already have an account?
-                <span onclick="window.location.href='{{url_for('login')}}'">Login</span>
+                <span onclick="window.location.href='{{ url_for('login') }}'">Sign in</span>
             </p>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -212,8 +621,7 @@ pwInput.addEventListener('input', () => {
 });
 
 function checkMatch() {
-    const pw = pwInput.value;
-    const cp = confirmInput.value;
+    const pw = pwInput.value, cp = confirmInput.value;
     if (!cp) { matchMsg.textContent = ''; return; }
     if (pw === cp) {
         matchMsg.textContent = '✓ Passwords match';
@@ -223,7 +631,6 @@ function checkMatch() {
         matchMsg.style.color = '#ef5350';
     }
 }
-
 confirmInput.addEventListener('input', checkMatch);
 
 togglePw.addEventListener('click', () => {
@@ -233,18 +640,20 @@ togglePw.addEventListener('click', () => {
     iconEyeOff.style.display = show ? 'block' : 'none';
 });
 
-function handleSignup(e) {
-    e.preventDefault();
-    if (pwInput.value !== confirmInput.value) { confirmInput.focus(); return; }
+document.getElementById('signup-form').addEventListener('submit', function(e) {
+    if (pwInput.value !== confirmInput.value) {
+        e.preventDefault();
+        confirmInput.focus();
+        return;
+    }
     const btn = document.getElementById('signup-btn');
     const txt = document.getElementById('signup-btn-text');
+    const spinner = document.getElementById('spinner');
+    const arrow = document.getElementById('btn-arrow');
     btn.disabled = true;
     txt.textContent = 'Creating account…';
-    setTimeout(() => {
-        btn.disabled = false;
-        txt.textContent = 'Create Account';
-        alert('Account created! (wire up your Flask route)');
-    }, 1500);
-}
+    spinner.style.display = 'block';
+    arrow.style.display = 'none';
+});
 </script>
 {% endblock %}

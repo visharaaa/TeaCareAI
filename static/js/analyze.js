@@ -63,3 +63,5 @@ function handleFile(file) {
     };
     reader.readAsDataURL(file);
 }
+
+checkScanReady();

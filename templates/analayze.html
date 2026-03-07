@@ -4,6 +4,72 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{url_for('static',filename='css/analyze.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rag-treatment.css') }}">
+<style>
+/* ── Field dropdown ── */
+.field-select-wrap {
+    position: relative;
+}
+
+.field-select-wrap select {
+    width: 100%;
+    height: 42px;
+    padding: 0 36px 0 12px;
+    border: 1.5px solid var(--primary-border, #d4e0d4);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--text-heading, #1a2e1a);
+    background: #fff;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field-select-wrap select:focus {
+    border-color: var(--primary, #22863c);
+    box-shadow: 0 0 0 3px rgba(34,134,60,0.1);
+}
+
+.field-select-wrap select:disabled {
+    background: #f4f7f0;
+    color: #9bab9b;
+    cursor: not-allowed;
+}
+
+.field-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #9bab9b;
+}
+
+.field-select-loading {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid #d4e0d4;
+    border-top-color: var(--primary, #22863c);
+    border-radius: 50%;
+    animation: field-spin 0.7s linear infinite;
+    display: none;
+}
+
+@keyframes field-spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.field-select-error {
+    font-size: 11.5px;
+    color: #b91c1c;
+    margin-top: 5px;
+    display: none;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +80,6 @@
     <aside class="history-panel">
         <div class="history-header">
             <div class="history-title-row">
-                <!-- Leaf icon -->
                 <span class="history-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -30,7 +95,6 @@
         <div class="history-list" id="history-list">
             <div class="history-empty" id="history-empty">
                 <div class="empty-icon">
-                    <!-- Inbox / empty state -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
                         stroke="var(--primary-border)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
@@ -62,7 +126,7 @@
                 <p class="form-subtitle">Upload a leaf image and provide details for a full diagnosis</p>
             </div>
 
-            <!-- Upload Box (shown when doing a new scan) -->
+            <!-- Upload Box -->
             <div class="upload-box" id="drop-zone">
                 <div class="upload-box-inner" id="upload-box-inner">
                     <div class="upload-icon-wrap">
@@ -77,7 +141,6 @@
                     <p class="upload-hint">Supports: JPG, PNG, JPEG</p>
                     <input type="file" id="file-input" hidden accept="image/jpg, image/png, image/jpeg">
                 </div>
-                <!-- Image preview after upload -->
                 <div class="preview-overlay" id="preview-overlay" style="display:none;">
                     <img id="preview-img" src="" alt="Preview">
                     <button class="remove-img-btn" id="remove-img-btn" title="Remove image" aria-label="Remove image">
@@ -90,7 +153,7 @@
                 </div>
             </div>
 
-            <!-- History Image Viewer (hidden by default, shown when viewing a history record) -->
+            <!-- History Image Viewer -->
             <div class="history-image-viewer" id="history-image-viewer" style="display:none;">
                 <img id="history-view-img" src="" alt="Scanned plant">
                 <div class="history-view-no-img" id="history-view-no-img" style="display:none;">
@@ -112,11 +175,39 @@
                 </button>
             </div>
 
-            <!-- Text Fields Row -->
+            <!-- Fields Row -->
             <div class="fields-row">
+
+                <!-- FIELD dropdown -->
                 <div class="field-group">
-                    <label for="location-input">
-                        <!-- Map pin -->
+                    <label for="field-select">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                        </svg>
+                        Field
+                    </label>
+                    <div class="field-select-wrap">
+                        <select id="field-select" disabled>
+                            <option value="">Loading fields…</option>
+                        </select>
+                        <!-- spinner shown while loading -->
+                        <div class="field-select-loading" id="field-select-loading"></div>
+                        <!-- arrow shown after load -->
+                        <div class="field-select-arrow" id="field-select-arrow" style="display:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="field-select-error" id="field-select-error">Could not load fields.</p>
+                </div>
+
+                <!-- LOCATION detect button -->
+                <div class="field-group">
+                    <label>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
@@ -124,11 +215,22 @@
                         </svg>
                         Location
                     </label>
-                    <input type="text" id="location-input" placeholder="e.g. Greenhouse A, Row 3" class="text-field">
+                    <button type="button" class="detect-location-btn" id="detect-location-btn" onclick="detectScanLocation()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                        </svg>
+                        <span id="detect-location-text">Detect My Location</span>
+                    </button>
+                    <input type="hidden" id="location-lat" value="">
+                    <input type="hidden" id="location-lng" value="">
+                    <p class="location-coords" id="location-coords" style="display:none;"></p>
                 </div>
+
+                <!-- BARCODE -->
                 <div class="field-group">
                     <label for="barcode-input">
-                        <!-- Barcode / tag -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
@@ -139,9 +241,33 @@
                 </div>
             </div>
 
+            <!-- No Fields Warning -->
+            <div id="no-fields-warning" style="display:none;
+                background:#fef3c7;
+                border:1px solid #f59e0b;
+                border-radius:10px;
+                padding:12px 16px;
+                display:none;
+                align-items:center;
+                gap:12px;
+                margin-bottom:4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                    fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="flex-shrink:0;">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                </svg>
+                <div>
+                    <p style="font-size:13.5px;font-weight:600;color:#92400e;margin:0 0 2px;">No fields registered</p>
+                    <p style="font-size:12.5px;color:#b45309;margin:0;">
+                        You need to add a field before scanning.
+                        <a href="/field/add" style="color:#92400e;font-weight:700;text-decoration:underline;text-underline-offset:2px;">Add a field →</a>
+                    </p>
+                </div>
+            </div>
+
             <!-- Scan Button -->
             <button class="scan-btn" id="scan-button">
-                <!-- Scan / search icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/>
@@ -167,6 +293,10 @@
                         <span class="result-value" id="confidence-text">--%</span>
                     </div>
                     <div class="result-row">
+                        <span class="result-label">Field</span>
+                        <span class="result-value" id="result-field">—</span>
+                    </div>
+                    <div class="result-row">
                         <span class="result-label">Location</span>
                         <span class="result-value" id="result-location">—</span>
                     </div>
@@ -177,7 +307,6 @@
                 </div>
                 <div class="treatment-box">
                     <h4>
-                        <!-- Pill / treatment -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                             stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             style="vertical-align:-2px; margin-right:5px;">
@@ -198,11 +327,8 @@
 {% block extra_js %}
     <script src="{{url_for('static',filename='js/analyze.js')}}"></script>
     <script src="{{url_for('static',filename='js/image_uploader.js')}}"></script>
-
-    <!-- Pass DB records into the history panel -->
     <script>
         const dbRecords = {{ records | tojson }};
         loadHistoryFromDB(dbRecords);
     </script>
-    
 {% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Add Field — PlantCare AI{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/add_field.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="field-page">
+    <div class="field-card">
+
+        <div class="field-card-header">
+            <div class="badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+                Field Management
+            </div>
+            <h1>Register a <em>new field</em></h1>
+            <p>Add your tea field details to start tracking disease and recovery.</p>
+        </div>
+
+        <div class="field-form-body">
+
+            {% if error %}
+            <div class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                </svg>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {{ success }} &nbsp;<a href="{{ url_for('add_field') }}">Add another</a>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('add_field') }}" id="field-form">
+
+                <div class="section-label">Field Identity</div>
+                <div class="input-group" style="margin-bottom:16px">
+                    <label for="field_name">Field Name</label>
+                    <input type="text" id="field_name" name="field_name"
+                           placeholder="e.g. Nuwara Eliya Block A" required
+                           value="{{ request.form.get('field_name', '') }}">
+                </div>
+
+                <div class="section-label">Location</div>
+                <div class="location-row" style="margin-bottom:16px">
+                    <div class="input-group">
+                        <label for="field_latitude">Latitude</label>
+                        <input type="number" id="field_latitude" name="field_latitude"
+                               placeholder="6.9708" step="0.00000001" required
+                               value="{{ request.form.get('field_latitude', '') }}">
+                    </div>
+                    <div class="input-group">
+                        <label for="field_longitude">Longitude</label>
+                        <input type="number" id="field_longitude" name="field_longitude"
+                               placeholder="80.7829" step="0.00000001" required
+                               value="{{ request.form.get('field_longitude', '') }}">
+                    </div>
+                    <button type="button" class="detect-btn" id="detect-btn" onclick="detectLocation()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                        </svg>
+                        Detect
+                    </button>
+                </div>
+
+                <div class="input-group" style="margin-bottom:0">
+                    <label for="field_elevation">Elevation (metres)</label>
+                    <input type="number" id="field_elevation" name="field_elevation"
+                           placeholder="e.g. 1868" step="0.01" required
+                           value="{{ request.form.get('field_elevation', '') }}">
+                    <p class="input-hint">Height above sea level in metres.</p>
+                </div>
+
+                <div class="section-label">Crop Details</div>
+                <div class="form-grid-2">
+                    <div class="input-group">
+                        <label for="tea_variety">Tea Variety</label>
+                        <input type="text" id="tea_variety" name="tea_variety"
+                               placeholder="e.g. Ceylon High Grown" required
+                               value="{{ request.form.get('tea_variety', '') }}">
+                    </div>
+                    <div class="input-group">
+                        <label for="plant_age">Plant Age (years)</label>
+                        <input type="number" id="plant_age" name="plant_age_in_years"
+                               placeholder="e.g. 8.5" step="0.1" min="0" required
+                               value="{{ request.form.get('plant_age_in_years', '') }}">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn"
+                            onclick="window.location.href='{{ url_for('home') }}'">Cancel</button>
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <span class="spinner" id="spinner"></span>
+                        <svg id="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                        <span id="btn-text">Save Field</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function detectLocation() {
+    const btn = document.getElementById('detect-btn');
+    if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+    btn.classList.add('loading');
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+        style="animation:spin 0.7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Detecting…`;
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            document.getElementById('field_latitude').value  = pos.coords.latitude.toFixed(8);
+            document.getElementById('field_longitude').value = pos.coords.longitude.toFixed(8);
+            btn.classList.remove('loading');
+            btn.classList.add('detected');
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/></svg> Detected`;
+        },
+        err => {
+            btn.classList.remove('loading');
+            btn.textContent = '📍 Detect';
+            alert('Could not get location: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+document.getElementById('field-form').addEventListener('submit', function() {
+    const btn  = document.getElementById('submit-btn');
+    const txt  = document.getElementById('btn-text');
+    const spin = document.getElementById('spinner');
+    const icon = document.getElementById('btn-icon');
+    btn.disabled = true;
+    txt.textContent = 'Saving…';
+    spin.style.display = 'block';
+    icon.style.display = 'none';
+});
+</script>
+{% endblock %}

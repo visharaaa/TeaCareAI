@@ -1,148 +1,439 @@
 // ── DOM Elements ──
-const scanButton = document.getElementById('scan-button');
-const statusText = document.getElementById('status-text');
-const confidenceText = document.getElementById('confidence-text');
-const treatmentText = document.getElementById('treatment-text');
-const resultCard = document.getElementById('result-card');
-const resultBadge = document.getElementById('result-badge');
-const resultLocation = document.getElementById('result-location');
-const resultBarcode = document.getElementById('result-barcode');
+const scanButton       = document.getElementById('scan-button');
+const statusText       = document.getElementById('status-text');
+const confidenceText   = document.getElementById('confidence-text');
+const treatmentText    = document.getElementById('treatment-text');
+const resultCard       = document.getElementById('result-card');
+const resultBadge      = document.getElementById('result-badge');
+const resultLocation   = document.getElementById('result-location');
+const resultBarcode    = document.getElementById('result-barcode');
+const resultField      = document.getElementById('result-field');
 
-const locationInput = document.getElementById('location-input');
-const barcodeInput = document.getElementById('barcode-input');
+const barcodeInput     = document.getElementById('barcode-input');
+const locationLatInput = document.getElementById('location-lat');
+const locationLngInput = document.getElementById('location-lng');
+const fieldSelect      = document.getElementById('field-select');
 
-const historyList = document.getElementById('history-list');
-const historyEmpty = document.getElementById('history-empty');
-const historyCount = document.getElementById('history-count');
-const clearHistoryBtn = document.getElementById('clear-history-btn');
+const historyList      = document.getElementById('history-list');
+const historyEmpty     = document.getElementById('history-empty');
+const historyCount     = document.getElementById('history-count');
+const clearHistoryBtn  = document.getElementById('clear-history-btn');
 
 // ── In-memory history store ──
 let analysisHistory = [];
 
-// ── Scan button ──
-scanButton.addEventListener('click', async () => {
-    if (fileInput.files.length === 0) {
-        alert("Please upload an image first!");
-        return;
+
+// ══════════════════════════════════════════
+// ── BUTTON ENABLE / DISABLE GUARD ──
+// ══════════════════════════════════════════
+
+function checkScanReady() {
+    const hasImage   = fileInput.files.length > 0;
+    const hasField   = fieldSelect.value !== '';
+    const hasBarcode = barcodeInput.value.trim() !== '';
+
+    const ready = hasImage && hasField && hasBarcode;
+    scanButton.disabled      = !ready;
+    scanButton.style.opacity = ready ? '1' : '0.45';
+    scanButton.style.cursor  = ready ? 'pointer' : 'not-allowed';
+}
+
+// Disable on page load
+scanButton.disabled      = true;
+scanButton.style.opacity = '0.45';
+scanButton.style.cursor  = 'not-allowed';
+
+// Watch all three inputs
+fileInput.addEventListener('change', checkScanReady);
+fieldSelect.addEventListener('change', checkScanReady);
+barcodeInput.addEventListener('input', checkScanReady);
+
+
+// ══════════════════════════════════════════
+// ── FIELD DROPDOWN — fetch from Flask ──
+// ══════════════════════════════════════════
+
+(async function loadFields() {
+    const spinner  = document.getElementById('field-select-loading');
+    const arrow    = document.getElementById('field-select-arrow');
+    const errorMsg = document.getElementById('field-select-error');
+
+    spinner.style.display = 'block';
+
+    try {
+        const res  = await fetch('/api/fields');
+        if (!res.ok) throw new Error('Request failed');
+        const fields = await res.json();
+
+        fieldSelect.innerHTML = '';
+
+        if (fields.length === 0) {
+            fieldSelect.innerHTML = '<option value="">No fields found</option>';
+            const warn = document.getElementById('no-fields-warning');
+            if (warn) warn.style.display = 'flex';
+        } else {
+            fieldSelect.innerHTML = '<option value="">— Select a field —</option>';
+            fields.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value       = f.field_id;
+                opt.textContent = f.field_name;
+                fieldSelect.appendChild(opt);
+            });
+            fieldSelect.disabled = false;
+        }
+
+        spinner.style.display = 'none';
+        arrow.style.display   = 'block';
+        checkScanReady(); // re-check after fields load
+
+    } catch (err) {
+        console.error('Failed to load fields:', err);
+        fieldSelect.innerHTML  = '<option value="">Could not load fields</option>';
+        spinner.style.display  = 'none';
+        arrow.style.display    = 'block';
+        errorMsg.style.display = 'block';
     }
+})();
+
+
+// ══════════════════════════════════════════
+// ── RAG TREATMENT FORMATTER ──
+// ══════════════════════════════════════════
+
+function formatRAGOutput(ragInput) {
+    let rawText, confidence, refId;
+    if (Array.isArray(ragInput)) {
+        [rawText, confidence, refId] = ragInput;
+    } else {
+        rawText = ragInput;
+        confidence = null;
+        refId = null;
+    }
+    return {
+        sections:   _parseIntoSections(String(rawText || '')),
+        confidence: confidence !== null ? _parseConfidence(confidence) : null,
+        refId:      refId || null,
+        rawText,
+    };
+}
+
+function renderRAGToHTML(formatted) {
+    const { sections, confidence, refId } = formatted;
+    const sectionIcons = {
+        'Symptoms': '🍃',
+        'Treatments': '💊',
+        'Practical Tips for Local Farmers': '🌱',
+        'Safety Note': '⚠️',
+    };
+
+    const sectionsHTML = sections.map(section => {
+        const headingHTML = section.heading
+            ? `<h4 class="rag-heading">${sectionIcons[section.heading] ?? '📌'} ${_escHTML(section.heading)}</h4>`
+            : '';
+        const isList    = section.items.some(i => i.type === 'bullet' || i.type === 'numbered');
+        const isOrdered = isList && section.items.every(i => i.type === 'numbered');
+        const tag       = isList ? (isOrdered ? 'ol' : 'ul') : 'div';
+        const itemsHTML = section.items.map(item => {
+            const inner = item.parts
+                .map(p => p.bold ? `<strong>${_escHTML(p.text)}</strong>` : _escHTML(p.text))
+                .join('');
+            return isList ? `<li>${inner}</li>` : `<p class="rag-para">${inner}</p>`;
+        }).join('\n');
+        return `<div class="rag-section">${headingHTML}<${tag} class="rag-list">${itemsHTML}</${tag}></div>`;
+    }).join('\n');
+
+    let footerHTML = '';
+    if (confidence || refId) {
+        const badge = confidence
+            ? `<span class="rag-confidence-badge" style="color:${confidence.color};border-color:${confidence.color}">
+                 ● ${_capitalize(confidence.level)} — ${confidence.value}%
+               </span>`
+            : '';
+        const ref = refId ? `<span class="rag-ref">REF: ${_escHTML(refId)}</span>` : '';
+        footerHTML = `<div class="rag-footer">${badge}${ref}</div>`;
+    }
+    return `<div class="rag-output">${sectionsHTML}${footerHTML}</div>`;
+}
+
+function _parseIntoSections(text) {
+    const lines = text.split('\n').map(l => l.trim());
+    const sections = [];
+    let currentSection = null;
+    let introParagraphs = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line) continue;
+        const headingMatch = line.match(/^\*\*(.+?)\**:?\*\*:?$/);
+        if (headingMatch) {
+            if (introParagraphs.length && !sections.length) {
+                sections.push({ type: 'intro', heading: null, items: introParagraphs });
+                introParagraphs = [];
+            }
+            if (currentSection) sections.push(currentSection);
+            currentSection = { type: 'section', heading: headingMatch[1].replace(/:$/, '').trim(), items: [] };
+        } else if (line.startsWith('• ') || line.startsWith('- ')) {
+            const content = line.replace(/^[•\-]\s+/, '');
+            if (currentSection) currentSection.items.push({ type: 'bullet', ..._parseInline(content) });
+        } else if (/^\d+\.\s/.test(line)) {
+            const content = line.replace(/^\d+\.\s/, '');
+            if (currentSection) currentSection.items.push({ type: 'numbered', ..._parseInline(content) });
+        } else {
+            const item = { type: 'paragraph', ..._parseInline(line) };
+            if (currentSection) currentSection.items.push(item);
+            else introParagraphs.push(item);
+        }
+    }
+    if (introParagraphs.length && !sections.length) sections.push({ type: 'intro', heading: null, items: introParagraphs });
+    if (currentSection) sections.push(currentSection);
+    return sections;
+}
+
+function _parseInline(text) {
+    const parts = [];
+    const regex = /\*\*(.+?)\*\*/g;
+    let last = 0, match;
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > last) parts.push({ bold: false, text: text.slice(last, match.index) });
+        parts.push({ bold: true, text: match[1] });
+        last = regex.lastIndex;
+    }
+    if (last < text.length) parts.push({ bold: false, text: text.slice(last) });
+    return { parts, plainText: parts.map(p => p.text).join('') };
+}
+
+function _parseConfidence(score) {
+    const value = parseFloat(score);
+    let level, color;
+    if (value >= 80)      { level = 'high';     color = '#2e7d32'; }
+    else if (value >= 60) { level = 'moderate'; color = '#f57c00'; }
+    else                  { level = 'low';      color = '#c62828'; }
+    return { value, level, color };
+}
+
+function _escHTML(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function _capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+
+function renderTreatment(el, ragInput) {
+    el.innerHTML = renderRAGToHTML(formatRAGOutput(ragInput));
+}
+
+
+// ══════════════════════════════════════════
+// ── GPS LOCATION DETECT ──
+// ══════════════════════════════════════════
+
+function detectScanLocation() {
+    const btn    = document.getElementById('detect-location-btn');
+    const label  = document.getElementById('detect-location-text');
+    const coords = document.getElementById('location-coords');
+
+    if (!navigator.geolocation) { alert('Geolocation is not supported by your browser.'); return; }
+
+    btn.classList.remove('detected');
+    btn.classList.add('detecting');
+    btn.disabled      = true;
+    label.textContent = 'Detecting…';
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            locationLatInput.value = lat;
+            locationLngInput.value = lng;
+            btn.classList.remove('detecting');
+            btn.classList.add('detected');
+            btn.disabled         = false;
+            label.textContent    = 'Location Detected ✓';
+            coords.style.display = 'block';
+            coords.textContent   = `${lat}, ${lng}`;
+        },
+        err => {
+            btn.classList.remove('detecting');
+            btn.disabled      = false;
+            label.textContent = 'Detect My Location';
+            const messages = { 1: 'Permission denied.', 2: 'Location unavailable.', 3: 'Request timed out.' };
+            alert(messages[err.code] || 'Could not get location.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+
+// ══════════════════════════════════════════
+// ── LOCATION WARNING HELPERS ──
+// ══════════════════════════════════════════
+
+function showLocationWarning(msg) {
+    let el = document.getElementById('location-warning');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'location-warning';
+        el.style.cssText = 'color:#b45309;background:#fef3c7;border:1px solid #f59e0b;padding:8px 12px;border-radius:6px;font-size:13px;margin-top:8px';
+        scanButton.parentNode.insertBefore(el, scanButton.nextSibling);
+    }
+    el.textContent   = '⚠️ ' + msg;
+    el.style.display = 'block';
+}
+
+function hideLocationWarning() {
+    const el = document.getElementById('location-warning');
+    if (el) el.style.display = 'none';
+}
+
+
+// ══════════════════════════════════════════
+// ── SCAN BUTTON ──
+// ══════════════════════════════════════════
+
+scanButton.addEventListener('click', async () => {
+    if (fileInput.files.length === 0) { alert('Please upload an image first!'); return; }
+
+    const selectedOption = fieldSelect.options[fieldSelect.selectedIndex];
+    const fieldId   = fieldSelect.value;
+    const fieldName = fieldId ? selectedOption.textContent : '—';
 
     const file = fileInput.files[0];
     const formData = new FormData();
     formData.append('image', file);
+    if (fieldId) formData.append('field_id', fieldId);
 
-    // Update UI: loading state
-    statusText.textContent = "Analyzing...";
-    statusText.style.color = "orange";
-    scanButton.disabled = true;
-    document.getElementById('btn-text').textContent = "Processing...";
-
-    // Show result card
+    statusText.textContent = 'Preparing…';
+    statusText.style.color = 'orange';
+    scanButton.disabled    = true;
+    document.getElementById('btn-text').textContent = 'Processing...';
     resultCard.style.display = 'block';
 
-    try {
-        const response = await fetch('/analayze', {
-            method: 'POST',
-            body: formData
-        });
+    // Use pre-detected coords or fall back to auto-geolocation
+    let lat = locationLatInput.value;
+    let lng = locationLngInput.value;
 
-        const result = await response.json();
+    if (!lat || !lng) {
+        statusText.textContent = 'Getting location...';
+        const coords = await new Promise(resolve => {
+            if (!navigator.geolocation) return resolve({ lat: '', lng: '' });
+            const timer = setTimeout(() => {
+                showLocationWarning('Location timed out — scan will proceed without coordinates.');
+                resolve({ lat: '', lng: '' });
+            }, 8000);
+            navigator.geolocation.getCurrentPosition(
+                pos => { clearTimeout(timer); hideLocationWarning(); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+                err => {
+                    clearTimeout(timer);
+                    const msgs = { 1: 'Location permission denied.', 2: 'Location unavailable.', 3: 'Location timed out.' };
+                    showLocationWarning((msgs[err.code] || 'Location unavailable.') + ' Scan will proceed without coordinates.');
+                    resolve({ lat: '', lng: '' });
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+            );
+        });
+        lat = coords.lat;
+        lng = coords.lng;
+    }
+
+    formData.append('latitude',  lat);
+    formData.append('longitude', lng);
+    formData.append('location',  (lat && lng) ? `${lat},${lng}` : '');
+    formData.append('barcode',   barcodeInput.value.trim());
+
+    statusText.textContent = 'Analyzing...';
+
+    try {
+        const response = await fetch('/analayze', { method: 'POST', body: formData });
+        const result   = await response.json();
         console.log(result);
 
         if (response.ok) {
-            const loc = locationInput.value.trim() || '—';
-            const barcode = barcodeInput.value.trim() || '—';
+            const loc     = result.location || ((lat && lng) ? `${lat}, ${lng}` : '—');
+            const barcode = result.barcode  || barcodeInput.value.trim() || '—';
 
-            // Update result card
-            statusText.textContent = result.status;
-            statusText.style.color = "#157f3c";
+            statusText.textContent     = result.status;
+            statusText.style.color     = '#157f3c';
             confidenceText.textContent = result.confidence;
-            treatmentText.textContent = result.treatment;
-            resultBadge.textContent = result.status;
+            renderTreatment(treatmentText, result.treatment);
+            resultBadge.textContent    = result.status;
+            resultField.textContent    = fieldName;
             resultLocation.textContent = loc;
-            resultBarcode.textContent = barcode;
+            resultBarcode.textContent  = barcode;
 
-            // Save to history
             addToHistory({
-                status: result.status,
-                confidence: result.confidence,
-                treatment: result.treatment,
-                location: loc,
-                barcode: barcode,
+                status:       result.status,
+                confidence:   result.confidence,
+                treatment:    result.treatment,
+                field:        fieldName,
+                location:     loc,
+                barcode:      barcode,
                 imageDataUrl: previewImg.src,
-                date: new Date().toLocaleString()
+                date:         new Date().toLocaleString()
             });
-
         } else {
-            statusText.textContent = "Error during analysis";
-            statusText.style.color = "red";
+            statusText.textContent = 'Error during analysis';
+            statusText.style.color = 'red';
             console.error(result.error);
         }
-
     } catch (error) {
         console.error('Error:', error);
-        statusText.textContent = "Connection Failed";
-        statusText.style.color = "red";
+        statusText.textContent = 'Connection Failed';
+        statusText.style.color = 'red';
     } finally {
-        scanButton.disabled = false;
-        document.getElementById('btn-text').textContent = "Start Analysis";
+        // Re-enable only if conditions still met
+        checkScanReady();
+        document.getElementById('btn-text').textContent = 'Start Analysis';
     }
 });
 
-// ── Add to history ──
-function addToHistory(entry) {
-    analysisHistory.unshift(entry); // newest first
-    renderHistory();
-}
+
+// ══════════════════════════════════════════
+// ── HISTORY ──
+// ══════════════════════════════════════════
+
+function addToHistory(entry) { analysisHistory.unshift(entry); renderHistory(); }
 
 function renderHistory() {
     historyEmpty.style.display = analysisHistory.length === 0 ? 'flex' : 'none';
-    historyCount.textContent = `${analysisHistory.length} scan${analysisHistory.length !== 1 ? 's' : ''}`;
+    historyCount.textContent   = `${analysisHistory.length} scan${analysisHistory.length !== 1 ? 's' : ''}`;
+    historyList.querySelectorAll('.history-item').forEach(el => el.remove());
 
-    // Remove old items (keep empty message in DOM)
-    const existingItems = historyList.querySelectorAll('.history-item');
-    existingItems.forEach(el => el.remove());
-
-    analysisHistory.forEach((entry, index) => {
+    analysisHistory.forEach(entry => {
         const item = document.createElement('div');
         item.className = 'history-item';
+
         const svgLeaf = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`;
-        const svgPin = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-        const svgTag = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l7.29-7.29a1 1 0 0 0 0-1.41L12 2z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>`;
+        const svgPin  = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+        const svgTag  = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l7.29-7.29a1 1 0 0 0 0-1.41L12 2z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>`;
 
         item.innerHTML = `
             <div class="history-item-top">
                 ${entry.imageDataUrl
                     ? `<img class="history-thumb" src="${entry.imageDataUrl}" alt="thumb">`
-                    : `<div class="history-thumb-placeholder">${svgLeaf}</div>`
-                }
+                    : `<div class="history-thumb-placeholder">${svgLeaf}</div>`}
                 <div class="history-info">
                     <div class="history-status">${entry.status}</div>
                     <div class="history-confidence">${entry.confidence}</div>
                 </div>
             </div>
             <div class="history-meta">
-                ${entry.location !== '—' ? `<span class="history-tag">${svgPin} ${entry.location}</span>` : ''}
-                ${entry.barcode !== '—' ? `<span class="history-tag">${svgTag} ${entry.barcode}</span>` : ''}
+                ${entry.field    && entry.field    !== '—' ? `<span class="history-tag">${svgLeaf} ${entry.field}</span>`   : ''}
+                ${entry.location && entry.location !== '—' ? `<span class="history-tag">${svgPin} ${entry.location}</span>` : ''}
+                ${entry.barcode  && entry.barcode  !== '—' ? `<span class="history-tag">${svgTag} ${entry.barcode}</span>`  : ''}
             </div>
             <div class="history-date">${entry.date}</div>
         `;
 
-        // Click to view history record
         item.addEventListener('click', () => {
-            // ── Populate result card ──
-            statusText.textContent = entry.status;
-            statusText.style.color = '#157f3c';
+            statusText.textContent     = entry.status;
+            statusText.style.color     = '#157f3c';
             confidenceText.textContent = entry.confidence;
-            treatmentText.textContent = entry.treatment;
-            resultBadge.textContent = entry.status;
-            resultLocation.textContent = entry.location;
-            resultBarcode.textContent = entry.barcode;
-            resultCard.style.display = 'block';
-
-            // ── Swap upload box → history image viewer ──
+            renderTreatment(treatmentText, entry.treatment);
+            resultBadge.textContent    = entry.status;
+            resultField.textContent    = entry.field    || '—';
+            resultLocation.textContent = entry.location || '—';
+            resultBarcode.textContent  = entry.barcode  || '—';
+            resultCard.style.display   = 'block';
             enterHistoryView(entry.imageDataUrl);
-
-            // ── Highlight active item ──
             document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
             item.classList.add('active');
         });
@@ -150,6 +441,7 @@ function renderHistory() {
         historyList.appendChild(item);
     });
 }
+
 
 // ══════════════════════════════════════════
 // ── HISTORY VIEW / UPLOAD BOX SWITCHING ──
@@ -161,102 +453,51 @@ const historyViewImg   = document.getElementById('history-view-img');
 const historyViewNoImg = document.getElementById('history-view-no-img');
 const newScanBtn       = document.getElementById('new-scan-btn');
 
-// Switch from upload box → history image viewer
 function enterHistoryView(imageUrl) {
-    // Hide the entire upload drop zone
-    dropZoneEl.style.display = 'none';
-
-    // Show history viewer
+    dropZoneEl.style.display    = 'none';
     historyViewer.style.display = 'block';
-
     if (imageUrl) {
-        historyViewImg.src = imageUrl;
-        historyViewImg.style.display = 'block';
+        historyViewImg.src             = imageUrl;
+        historyViewImg.style.display   = 'block';
         historyViewNoImg.style.display = 'none';
     } else {
-        // No image saved for this record — show placeholder
-        historyViewImg.style.display = 'none';
+        historyViewImg.style.display   = 'none';
         historyViewNoImg.style.display = 'flex';
     }
 }
 
-// Switch back from history viewer → upload box (New Scan)
 function exitHistoryView() {
     historyViewer.style.display = 'none';
-    dropZoneEl.style.display = 'block';
-
-    // Remove active highlight from all history items
+    dropZoneEl.style.display    = 'block';
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
-
-    // Reset result card
     resultCard.style.display = 'none';
 }
 
-// "New Scan" button inside the history viewer
 newScanBtn.addEventListener('click', exitHistoryView);
 
-// ── Clear history ──
 clearHistoryBtn.addEventListener('click', () => {
     if (analysisHistory.length === 0) return;
-    if (confirm("Clear all analysis history?")) {
-        analysisHistory = [];
-        renderHistory();
-    }
+    if (confirm('Clear all analysis history?')) { analysisHistory = []; renderHistory(); }
 });
+
 
 // ══════════════════════════════════════════
 // ── LOAD HISTORY FROM DATABASE ──
 // ══════════════════════════════════════════
-//
-// Call this function with a list of records fetched from your Flask/DB route.
-//
-// Each record in the list should have these fields:
-//   {
-//     status      : string  — e.g. "Healthy" or "Leaf Blight"
-//     confidence  : string  — e.g. "92.4%"
-//     treatment   : string  — treatment recommendation text
-//     location    : string  — e.g. "Greenhouse A, Row 3"  (use "" or null if none)
-//     barcode     : string  — e.g. "PLT-20240601-007"     (use "" or null if none)
-//     image_url   : string  — URL or base64 data URL of the scanned image (use "" or null if none)
-//     date        : string  — e.g. "2024-06-01 14:32"
-//   }
-//
-// Example usage from Flask (Jinja2 template):
-//   <script>
-//     const dbRecords = {{ records | tojson }};
-//     loadHistoryFromDB(dbRecords);
-//   </script>
-//
-// Example usage with fetch():
-//   fetch('/api/history')
-//     .then(r => r.json())
-//     .then(data => loadHistoryFromDB(data.records));
-//
+
 function loadHistoryFromDB(records) {
-    if (!Array.isArray(records) || records.length === 0) {
-        console.warn('loadHistoryFromDB: no records provided or invalid format.');
-        renderHistory();
-        return;
-    }
-
-    // Normalise each DB record into the internal history entry format
-    const normalised = records.map(record => ({
-        status      : record.disease_name                   || 'Unknown',
-        confidence  : record.confidence                     || '--%',
-        treatment   : record.treatment                      || 'No treatment data available.',
-        location    : record.longitude                      || '—',
-        barcode     : record.barcode                        || '—',
-        imageDataUrl: record.imageDataUrl                   || null,
-        date        : record.date                           || '—'
+    if (!Array.isArray(records) || records.length === 0) { renderHistory(); return; }
+    analysisHistory = records.map(record => ({
+        status:       record.disease_name || 'Unknown',
+        confidence:   record.confidence   || '--%',
+        treatment:    record.treatment    || 'No treatment data available.',
+        field:        record.field_name   || '—',
+        location:     record.longitude    || '—',
+        barcode:      record.barcode      || '—',
+        imageDataUrl: record.imageDataUrl || null,
+        date:         record.date         || '—'
     }));
-    console.log(normalised);
-
-    // Replace the in-memory store (newest first — reverse if DB returns oldest first)
-    analysisHistory = normalised;
-
     renderHistory();
-
-    console.log(`loadHistoryFromDB: loaded ${normalised.length} record(s) into history panel.`);
 }
 
 // ── Init ──
