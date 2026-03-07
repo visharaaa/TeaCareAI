@@ -1,5 +1,4 @@
 from app.database.init_db import init_db
-from app.database.db import Database
 from config import Config
 
 print(Config.DEFAULT_DB_NAME)
