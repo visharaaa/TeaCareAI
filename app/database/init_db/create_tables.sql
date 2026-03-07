@@ -23,6 +23,7 @@ CREATE TABLE users (
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     password    VARCHAR(255) NOT NULL,
     user_type   user_type_enum NOT NULL DEFAULT 'farmer',
+    is_revoked  BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT user_pk       PRIMARY KEY (user_id),
     CONSTRAINT user_code_uk  UNIQUE (user_code),
     CONSTRAINT user_email_uk UNIQUE (email)
@@ -33,24 +34,15 @@ CREATE TABLE users (
 -- ============================================================
 CREATE TABLE field (
     field_id            SERIAL NOT NULL,
+    user_id             INT NOT NULL,
     field_name          VARCHAR(150) NOT NULL,
     field_latitude      DECIMAL(10, 8) NOT NULL,
     field_longitude     DECIMAL(11, 8) NOT NULL,
     field_elevation     DECIMAL(8, 2)  NOT NULL,
     tea_variety         VARCHAR(100)   NOT NULL,
     plant_age_in_years  DECIMAL(5, 1)  NOT NULL,
-    CONSTRAINT field_pk PRIMARY KEY (field_id)
-);
-
--- ============================================================
---  3. ownership  (users <---> field)
--- ============================================================
-CREATE TABLE ownership (
-    user_id  INT NOT NULL,
-    field_id INT NOT NULL,
-    CONSTRAINT ownership_pk       PRIMARY KEY (user_id, field_id),
-    CONSTRAINT ownership_user_fk  FOREIGN KEY (user_id)  REFERENCES users(user_id)  ON DELETE CASCADE,
-    CONSTRAINT ownership_field_fk FOREIGN KEY (field_id) REFERENCES field(field_id) ON DELETE CASCADE
+    CONSTRAINT field_pk PRIMARY KEY (field_id),
+    CONSTRAINT field_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- ============================================================
@@ -75,10 +67,9 @@ CREATE TABLE user_scan_history (
     field_id INT NOT NULL,
     scan_id  INT NOT NULL,
     CONSTRAINT user_scan_history_pk           PRIMARY KEY (user_id, field_id, scan_id),
-    CONSTRAINT user_scan_history_user_fk      FOREIGN KEY (user_id)          REFERENCES users(user_id)             ON DELETE CASCADE,
-    CONSTRAINT user_scan_history_field_fk     FOREIGN KEY (field_id)         REFERENCES field(field_id)            ON DELETE CASCADE,
-    CONSTRAINT user_scan_history_scan_fk      FOREIGN KEY (scan_id)          REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE,
-    CONSTRAINT user_scan_history_ownership_fk FOREIGN KEY (user_id, field_id) REFERENCES ownership(user_id, field_id) ON DELETE CASCADE
+    CONSTRAINT user_scan_history_user_fk      FOREIGN KEY (user_id)  REFERENCES users(user_id)             ON DELETE CASCADE,
+    CONSTRAINT user_scan_history_field_fk     FOREIGN KEY (field_id) REFERENCES field(field_id)            ON DELETE CASCADE,
+    CONSTRAINT user_scan_history_scan_fk      FOREIGN KEY (scan_id)  REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE
 );
 
 -- ============================================================
@@ -113,11 +104,11 @@ CREATE TABLE treatment_recommendation (
     recommendation_id   SERIAL NOT NULL,
     recommendation_code VARCHAR(10)  NOT NULL,
     generated_advice    TEXT         NOT NULL,
-    feedback_score      SMALLINT     NULL,
+    RAG_confidence_score    DECIMAL(5, 2) NOT NULL,
     model_version       VARCHAR(50)  NOT NULL,
     CONSTRAINT treatment_recommendation_pk           PRIMARY KEY (recommendation_id),
     CONSTRAINT treatment_recommendation_code_uk      UNIQUE (recommendation_code),
-    CONSTRAINT treatment_recommendation_feedback_chk CHECK (feedback_score BETWEEN 1 AND 5)
+    CONSTRAINT treatment_recommendation_RAG_confidence_score_chk CHECK (RAG_confidence_score BETWEEN 0 AND 100)
 );
 
 -- ============================================================
@@ -128,12 +119,12 @@ CREATE TABLE detection (
     detection_code      VARCHAR(20)  NOT NULL,
     scan_id             INT          NOT NULL,
     disease_id          INT          NOT NULL,
-    confidence_score    DECIMAL(5, 4) NOT NULL,
+    confidence_score    DECIMAL(5, 2) NOT NULL,
     bounding_box        JSONB         NOT NULL,
     severity_level      severity_level_enum   NOT NULL,
     lesion_count        INT           NOT NULL DEFAULT 0,
-    healthy_leaf_area   DECIMAL(5, 2) NOT NULL,
-    affected_area       DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    healthy_leaf_area   DECIMAL(8, 2) NOT NULL,
+    affected_area       DECIMAL(8, 2) NOT NULL DEFAULT 0,
     recovery_percentage DECIMAL(5, 2)          DEFAULT 0.00,
     status              detection_status_enum  NOT NULL DEFAULT 'new',
     image_name          VARCHAR(255)  NOT NULL,
@@ -141,9 +132,7 @@ CREATE TABLE detection (
     CONSTRAINT detection_code_uk          UNIQUE (detection_code),
     CONSTRAINT detection_scan_fk          FOREIGN KEY (scan_id)    REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE,
     CONSTRAINT detection_disease_fk       FOREIGN KEY (disease_id) REFERENCES disease(disease_id)        ON DELETE RESTRICT,
-    CONSTRAINT detection_confidence_chk   CHECK (confidence_score   BETWEEN 0 AND 1),
-    CONSTRAINT detection_healthy_area_chk CHECK (healthy_leaf_area  BETWEEN 0 AND 100),
-    CONSTRAINT detection_affected_area_chk CHECK (affected_area     BETWEEN 0 AND 100),
+    CONSTRAINT detection_confidence_chk   CHECK (confidence_score   BETWEEN 0 AND 100),
     CONSTRAINT detection_recovery_chk     CHECK (recovery_percentage BETWEEN 0 AND 100)
 );
 
@@ -179,7 +168,6 @@ CREATE TABLE user_refresh_token (
 -- ============================================================
 --  INDEXES
 -- ============================================================
-CREATE INDEX idx_ownership_user      ON ownership(user_id);
 CREATE INDEX idx_scan_history_field  ON user_scan_history(field_id);
 CREATE INDEX idx_scan_history_user   ON user_scan_history(user_id);
 CREATE INDEX idx_detection_scan      ON detection(scan_id);

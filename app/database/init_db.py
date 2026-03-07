@@ -36,6 +36,6 @@ def init_db(default_db,new_db,create_tables_path,test_data_path):
         return
     database=Database()
     database.create_tables(create_tables_path)
-    database.add_dummimg_data(test_data_path)
+    #database.add_dummimg_data(test_data_path)
     print("Database initialized successfully!")
 
