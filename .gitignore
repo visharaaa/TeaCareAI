@@ -6,3 +6,6 @@ static/uploaded_leaves/
 app/database/__pycache__/
 app/database/RAG_kb/
 app/services/__pycache__/
+test_db.ipynb
+test_NN.ipynb
+.vscode/
