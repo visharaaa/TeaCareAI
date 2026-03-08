@@ -8,16 +8,21 @@ from flask import session, redirect, url_for, request, jsonify
 from controller import db
 
 
-
+# params=> raw_token
+# this function returns the hash of the token
 def hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()
 
-
+# params=> None
+# this function returns a random token
 def generate_refresh_token() -> str:
     return secrets.token_urlsafe(64)
 
 
-#Done
+# params=> email, password, device_info, latitude, longitude
+# this function logs in the user and creates a new session
+# returns user data and error message if any
+# error message is None if no error
 def login_user(email: str, password: str, device_info: str = None, latitude=None, longitude=None):
     user_data = db.get_use_data_by_email(email)
     if not user_data:
@@ -32,7 +37,7 @@ def login_user(email: str, password: str, device_info: str = None, latitude=None
     if not bcrypt.checkpw(password.encode("utf-8"), user_data["password"].encode("utf-8")):
         return None, "Invalid email or password."
 
-    # Flask session
+    # Store user data in session
     session.permanent = True
     session["user_id"]   = user_data["user_id"]
     session["user_code"] = user_data["user_code"]
@@ -53,7 +58,8 @@ def login_user(email: str, password: str, device_info: str = None, latitude=None
     session["refresh_token"] = raw_token
     return user_data, None
 
-
+# params=> None
+# this function logs out the user and revokes the session
 def logout_user():
     raw_token = session.get("refresh_token")
     if raw_token:
@@ -61,7 +67,8 @@ def logout_user():
         db.revoked_session_token(token_hash)
     session.clear()
 
-
+# params=> None
+# this function returns the current user data
 def get_current_user():
     if "user_id" not in session:
         return None
@@ -73,7 +80,9 @@ def get_current_user():
         "user_type": session["user_type"],
     }
 
-
+# params=> f
+# this function is a decorator that checks if the user is logged in
+# if not, it redirects to the login page
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):

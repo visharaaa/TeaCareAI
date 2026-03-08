@@ -1,4 +1,4 @@
-from flask import url_for,jsonify
+from flask import url_for
 import os
 from datetime import datetime
 import threading
@@ -6,7 +6,6 @@ import queue
 import bcrypt
 from datetime import timedelta
 import requests
-from psycopg2.extras import Json
 
 
 from app.database.db import Database
@@ -182,13 +181,13 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
 
     result = {
         'status':     standardize_disease_name(disease_name),
-        'confidence': str(disease_identifier_confidence_score*100) + '%',
+        'confidence': str(disease_identifier_confidence_score) + '%',
         'treatment':  llm_response,
-        'recommendation_code': 1,
+        'severity_level': severity_level,
         'recovery_percentage': str(recovery_percentage),
+        'detection_status': status,
         'barcode': chat_code,
-        'location': f"{latitude},{longitude}",
-        'recovery':recovery_percentage
+        'location': f"{latitude},{longitude}"
     }
     return result
 
@@ -370,6 +369,8 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
     added=False
     scan_id = None
     already_there=False
+    detection_id=None
+    detection_code=None
 
     if result:
         # If it exists, extract the integer scan_id
@@ -436,15 +437,6 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
 
         #get new detection_id and detection_code
         detection_id,detection_code=db.get_new_detection_code()
-        # print(bounding_box)
-        #
-        # for i in range(len(bounding_box)):
-        #     bounding_box[i]['mask'] = bounding_box[i]['mask'].tolist()
-        #     bounding_box[i]['mask'] = Json(bounding_box[i]['mask'])
-        #
-        # bounding_box = Json(bounding_box)
-        # bounding_box = jsonify(bounding_box)
-        # print(bounding_box)
 
         # store the output from disease_identifier  and recovery traker
         detection_result = db.add_detection(
@@ -453,7 +445,7 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             scan_id=scan_id,
             disease_id=disease_id,
             confidence_score=disease_identifier_confidence_score,
-            bounding_box=Json(status),
+            bounding_box=bounding_box,
             severity_level=severity_level,
             lesion_count=lesion_count,
             healthy_leaf_area=healthy_leaf_area,
@@ -471,6 +463,7 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             return False,'Error when adding new detection.'
 
     recommendation_result = None
+    applied_treatment_result = None
     try:
         # get new recommendation_id and recommendation_code
         recommendation_id,recommendation_code=db.get_new_recommendation_code()
@@ -481,13 +474,19 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             generated_advice=generated_advice,
             RAG_confidence_score=RAG_confidence_score
         )
+        applied_treatment_result=db.add_applied_treatment(
+            detection_id=detection_id,
+            recommendation_id=recommendation_id
+        )
+
     except Exception as e:
         print(e)
 
     finally:
-        if not recommendation_result:
+        if not (recommendation_result & applied_treatment_result):
             print('Deleting recommendation...')
             db.remove_detection_by_detection_id(detection_id)
+            db.remove_applied_treatment(detection_id)
             if added:
                 db.remove_scan_history_chat_by_chat_code(chat_code)
             return False,'Error when storing treatment.'

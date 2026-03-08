@@ -173,7 +173,7 @@ class TeaDiseaseRAG:
             final_response = f"Error generating ollama response: {str(e)}"
 
         # Log and return
-        self.log_request(query, severity, location, disease, confidence_percent, final_response)
+        #self.log_request(query, severity, location, disease, confidence_percent, final_response)
 
         return {
             "status": "success",

@@ -155,7 +155,6 @@ def analayze():
 
         #getting the result from tea_disease_identifier,treatment_recommendations and recovery_tracker
         results = predict(user_id,image_file,field_id=field_id,chat_code=barcode, latitude=latitude, longitude=longitude)
-        results.pop('recovery')
         return jsonify(results), 200
 
     # load the chat history data

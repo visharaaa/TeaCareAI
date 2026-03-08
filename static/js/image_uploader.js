@@ -43,8 +43,8 @@ scanButton.disabled      = true;
 scanButton.style.opacity = '0.45';
 scanButton.style.cursor  = 'not-allowed';
 
-// Watch all three inputs
-fileInput.addEventListener('change', checkScanReady);
+// Watch field and barcode directly
+// Image state is handled by analyze.js which calls checkScanReady() directly
 fieldSelect.addEventListener('change', checkScanReady);
 barcodeInput.addEventListener('input', checkScanReady);
 
@@ -359,15 +359,44 @@ scanButton.addEventListener('click', async () => {
             resultLocation.textContent = loc;
             resultBarcode.textContent  = barcode;
 
+            // ── Severity ──
+            const severityEl = document.getElementById('result-severity');
+            const severityRaw = (result.severity_level || '—').toLowerCase();
+            severityEl.innerHTML = '';
+            if (severityRaw !== '—') {
+                const badge = document.createElement('span');
+                badge.className = `severity-badge ${severityRaw}`;
+                badge.textContent = severityRaw.charAt(0).toUpperCase() + severityRaw.slice(1);
+                severityEl.appendChild(badge);
+            } else {
+                severityEl.textContent = '—';
+            }
+
+            // ── Recovery — hide if status is 'new' ──
+            const recoveryRow = document.getElementById('recovery-row');
+            const recoveryEl  = document.getElementById('result-recovery');
+            const detectionStatus = (result.detection_status || result.status || '').toLowerCase();
+            if (detectionStatus === 'new') {
+                recoveryRow.style.display = 'none';
+            } else {
+                recoveryRow.style.display = '';
+                recoveryEl.textContent = result.recovery_percentage
+                    ? result.recovery_percentage + '%'
+                    : '—';
+            }
+
             addToHistory({
-                status:       result.status,
-                confidence:   result.confidence,
-                treatment:    result.treatment,
-                field:        fieldName,
-                location:     loc,
-                barcode:      barcode,
-                imageDataUrl: previewImg.src,
-                date:         new Date().toLocaleString()
+                status:            result.status,
+                confidence:        result.confidence,
+                treatment:         result.treatment,
+                field:             fieldName,
+                location:          loc,
+                barcode:           barcode,
+                severity_level:    result.severity_level || '—',
+                recovery_percentage: result.recovery_percentage || null,
+                detection_status:  result.detection_status || result.status,
+                imageDataUrl:      previewImg.src,
+                date:              new Date().toLocaleString()
             });
         } else {
             statusText.textContent = 'Error during analysis';
@@ -432,6 +461,31 @@ function renderHistory() {
             resultField.textContent    = entry.field    || '—';
             resultLocation.textContent = entry.location || '—';
             resultBarcode.textContent  = entry.barcode  || '—';
+
+            // ── Severity ──
+            const severityEl  = document.getElementById('result-severity');
+            const severityRaw = (entry.severity_level || '—').toLowerCase();
+            severityEl.innerHTML = '';
+            if (severityRaw !== '—') {
+                const badge = document.createElement('span');
+                badge.className = `severity-badge ${severityRaw}`;
+                badge.textContent = severityRaw.charAt(0).toUpperCase() + severityRaw.slice(1);
+                severityEl.appendChild(badge);
+            } else {
+                severityEl.textContent = '—';
+            }
+
+            // ── Recovery ──
+            const recoveryRow = document.getElementById('recovery-row');
+            const recoveryEl  = document.getElementById('result-recovery');
+            const dStatus = (entry.detection_status || '').toLowerCase();
+            if (dStatus === 'new') {
+                recoveryRow.style.display = 'none';
+            } else {
+                recoveryRow.style.display = '';
+                recoveryEl.textContent = entry.recovery_percentage ? entry.recovery_percentage + '%' : '—';
+            }
+
             resultCard.style.display   = 'block';
             enterHistoryView(entry.imageDataUrl);
             document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
@@ -502,3 +556,4 @@ function loadHistoryFromDB(records) {
 
 // ── Init ──
 renderHistory();
+checkScanReady();

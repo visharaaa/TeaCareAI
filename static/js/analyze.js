@@ -51,6 +51,7 @@ function clearPreview() {
     uploadBoxInner.style.display = 'flex';
     previewImg.src = '';
     fileInput.value = '';
+    checkScanReady(); // ← disable scan button when image removed
 }
 
 // ── Handle file & show preview ──
@@ -60,8 +61,7 @@ function handleFile(file) {
         previewImg.src = e.target.result;
         previewOverlay.style.display = 'block';
         uploadBoxInner.style.display = 'none';
+        checkScanReady(); // ← enable scan button if all conditions met
     };
     reader.readAsDataURL(file);
 }
-
-checkScanReady();

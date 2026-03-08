@@ -69,6 +69,23 @@
     margin-top: 5px;
     display: none;
 }
+
+/* ── Severity level colors ── */
+.severity-low    { color: #16a34a; font-weight: 700; }
+.severity-medium { color: #d97706; font-weight: 700; }
+.severity-high   { color: #dc2626; font-weight: 700; }
+
+/* ── Severity badge ── */
+.severity-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+.severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+.severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 </style>
 {% endblock %}
 
@@ -303,6 +320,14 @@
                     <div class="result-row">
                         <span class="result-label">Barcode</span>
                         <span class="result-value" id="result-barcode">—</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Severity</span>
+                        <span class="result-value" id="result-severity">—</span>
+                    </div>
+                    <div class="result-row" id="recovery-row">
+                        <span class="result-label">Recovery</span>
+                        <span class="result-value" id="result-recovery">—</span>
                     </div>
                 </div>
                 <div class="treatment-box">

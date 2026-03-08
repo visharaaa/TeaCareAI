@@ -52,7 +52,7 @@ class TeaDiseaseIdentifier:
                 masks.append(self.save_pologon(class_name,conf,mask))
                 lesion_count+=self.lesion_counter(class_id)
                 pixel_count_arr+=self.pixel_adder(class_id,self.count_pixels(raw_mask_numpy))
-        return pixel_count_arr,sum(confident_list)/len(confident_list),lesion_count,masks
+        return pixel_count_arr,round((sum(confident_list)/len(confident_list))*100,2),lesion_count,masks
 
     def lesion_counter(self,class_id):
         if self.names[class_id] != 'leaf':
