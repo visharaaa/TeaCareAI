@@ -159,7 +159,7 @@ class TeaDiseaseRAG:
 
         Give a friendly, simple response in English.
         - Explain symptoms in easy words in point form
-        - List and explain treatments in bullet points
+        - List and explain treatments in bullet points and give respective percentages
         - Add 2-3 practical tips for local farmers
         - Keep short (150-250 words)
         - End with safety note
