@@ -2,7 +2,9 @@
 
 from sentence_transformers import SentenceTransformer
 import chromadb
-from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 embedder = SentenceTransformer('BAAI/bge-small-en-v1.5')
 client = chromadb.PersistentClient(path = "chroma_DB")
@@ -91,6 +93,7 @@ for query, expected_disease, expected_severity in test_cases:
 precision = precision_score(y_true, y_pred)
 recall = recall_score(y_true, y_pred)
 f1 = f1_score(y_true, y_pred)
+cm = confusion_matrix(y_true, y_pred)
 
 correct_count = 0
 for i in range(len(y_true)):
@@ -106,5 +109,14 @@ print(f"Recall: {recall:.4f}")
 print(f"F1-Score: {f1:.4f}")
 print(f"Accuracy: {accuracy:.1f}%")
 print(f"Test queries: {len(test_cases)}")
+print("Confusion Matrix:")
+print(cm)
+
+# CM heatmap
+sns.heatmap(cm, annot = True, fmt = 'd', cmap = 'Blues', xticklabels = ['No Match', 'Correct Match'], yticklabels = ['No Match', 'Correct Match'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Retriever Correctness Confusion Matrix')
+plt.show()
 
 
