@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Load data
-df = pd.read_csv('tea_leaf_recovery_v3.csv')
+df = pd.read_csv('data/tea_leaf_recovery_v3.csv')
 df = pd.get_dummies(df, columns=['disease'], prefix='disease')
 
 X = df.drop(columns=['recovery_score'])
