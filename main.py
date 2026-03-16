@@ -54,7 +54,7 @@ class TreatmentProgressTracker:
         return change, trend
 
 
-# ── Example usage ────────────────────────────
+# Example usage
 
 if __name__ == "__main__":
 
