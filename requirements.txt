@@ -1,12 +1,4 @@
-tensorflow
-scikit-learn
-pandas
-numpy
-matplotlib
 seaborn
-joblib
-openpyxl
-
 joblib==1.5.3
 matplotlib-inline==0.1.7
 numpy==2.4.2
