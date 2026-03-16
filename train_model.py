@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Load data
-df = pd.read_csv('data/tea_leaf_recovery_dataset.csv')
+df = pd.read_csv('tea_leaf_recovery_v3.csv')
 df = pd.get_dummies(df, columns=['disease'], prefix='disease')
 
 X = df.drop(columns=['recovery_score'])
@@ -51,4 +51,4 @@ joblib.dump(scaler, 'scaler.pkl')
 joblib.dump(list(X.columns), 'feature_columns.pkl')
 joblib.dump({'X_test': X_test_scaled, 'y_test': y_test.values, 'history': history.history}, 'test_data.pkl')
 
-print("\nDone. Saved: recovery_model.h5, scaler.pkl, feature_columns.pkl, test_data.pkl")
+print("\nSaved: recovery_model.h5, scaler.pkl, feature_columns.pkl, test_data.pkl")
