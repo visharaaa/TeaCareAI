@@ -35,9 +35,7 @@ X_test_scaled  = scaler.transform(X_test)
 # Final layer ->  1 neuron with linear activation
 # because this is a regression task outputting a single continuous value
 model = Sequential([
-    Dense(64, activation='relu', input_shape=(X_train_scaled.shape[1],)),
-    Dropout(0.3),
-    Dense(32, activation='relu'),
+    Dense(32, activation='relu', input_shape=(X_train_scaled.shape[1],)),
     Dropout(0.2),
     Dense(16, activation='relu'),
     Dense(1,  activation='linear')
