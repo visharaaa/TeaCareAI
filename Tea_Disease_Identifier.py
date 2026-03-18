@@ -120,7 +120,7 @@ class TeaDiseaseIdentifier:
             "healthy_leaf_area":healthy_leaf_area,
             "affected_area":affected_area,
             "lesion_count":lesion_count,
-            "masks":masks,
+            "masks":self.convert_to_dict(masks),
             "color_deviation":color_deviation
         }
     
@@ -150,6 +150,19 @@ class TeaDiseaseIdentifier:
         total_pixels    = healthy_mask.size
         color_deviation = round(1 - (healthy_pixels / total_pixels), 3)
         return color_deviation
+    
+    #param=> model output in dictionary format
+    #this function converts the model output, which is in a dictionary format, into a cleaner
+    # retrun a list of dictionaries
+    def convert_to_dict(self,masks):
+        masks_clean = []
+        for mask in masks:
+            masks_clean.append({
+                'class_id':   mask['class_id'],
+                'confidence': float(mask['confidence']),
+                'polygon':    mask['mask'].tolist()
+            })
+        return json.dumps(masks_clean)
         
 
 #instruction for get_disease function
