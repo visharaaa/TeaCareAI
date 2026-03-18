@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PlantCare AI{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
+    <link rel="stylesheet" href="{{url_for('static',filename='css/header.css')}}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <header>
+        <img src="{{url_for('static',filename='icons/logo.png')}}" alt="PlantCare AI">
+        <div class="header-buttons">
+            <button class="not-actived" onclick="window.location.href='{{ url_for('home') }}'">Home</button>
+            <button class="not-actived" onclick="window.location.href='{{ url_for('analayze') }}'">Analyze</button>
+            <button onclick="window.location.href='{{ url_for('add_field') }}'">Add Field</button>
+            <button class="not-actived" onclick="window.location.href='{{url_for('about')}}'">About Us</button>
+
+            {% if session.get('user_id') %}
+                <span class="header-username">{{ session.get('user_name') }}</span>
+                <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
+                    <button type="submit" class="not-actived logout-btn">Logout</button>
+                </form>
+            {% else %}
+                <button class="not-actived" onclick="window.location.href='{{url_for('login')}}'">Login</button>
+            {% endif %}
+        </div>
+    </header>
+
+    {% block content %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
