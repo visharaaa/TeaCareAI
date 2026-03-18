@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import os
 import ollama
+import json
 from datetime import datetime
 import csv
 import logging
@@ -158,7 +159,7 @@ class TeaDiseaseRAG:
 
         Give a friendly, simple response in English.
         - Explain symptoms in easy words in point form
-        - List and explain treatments in bullet points
+        - List and explain treatments in bullet points and give respective percentages
         - Add 2-3 practical tips for local farmers
         - Keep short (150-250 words)
         - End with safety note
@@ -173,7 +174,7 @@ class TeaDiseaseRAG:
             final_response = f"Error generating ollama response: {str(e)}"
 
         # Log and return
-        #self.log_request(query, severity, location, disease, confidence_percent, final_response)
+        self.log_request(query, severity, location, disease, confidence_percent, final_response)
 
         return {
             "status": "success",
@@ -183,10 +184,6 @@ class TeaDiseaseRAG:
             "confidence": confidence_percent
         }
 
-    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
-        respond=self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
-        response=(respond.get("llm_response"),respond.get("confidence"))
-        return response
 
     def log_request(self, query, severity, location, disease, confidence, response):
         file_exists = os.path.isfile("rag_log.csv")
@@ -195,6 +192,12 @@ class TeaDiseaseRAG:
             if not file_exists:
                 writer.writerow(["Timestamp", "Query", "Severity", "Location", "Disease", "Confidence", "Response"])
             writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
+
+
+    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
+        respond = self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
+        response = (respond.get("llm_response"), respond.get("confidence"))
+        return response
 
 
 if __name__ == "__main__":
@@ -207,10 +210,11 @@ if __name__ == "__main__":
     # Run example query
     result = rag_system.get_recommendation(
         disease_name = "Blister Blight",
-        severity_level = "medium",
+        severity_level = "high",
         location = "Hatton"
     )
 
     print("\nLLM response:")
     print(result.get('llm_response', result.get('message')))
+
 
