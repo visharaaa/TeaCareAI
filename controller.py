@@ -260,7 +260,6 @@ def recovery_tracker_worker():
             NN_queue.task_done()
 
 def register_user(user_name, email, password, user_type):
-    """Hash password with bcrypt, auto-generate user_code, insert into users."""
 
     #checking if the user already exists
     existing = db.check_email_exists(email)
