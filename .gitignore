@@ -7,3 +7,5 @@ test.ipynb
 final dataset/
 .idea/
 runs/
+test.*
+__pycache__/
