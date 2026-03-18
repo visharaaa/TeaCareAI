@@ -1,6 +1,9 @@
+import random
+from datetime import datetime
+
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import auth
-from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details
+from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details,generate_new_chat_code
 
 app = Flask(__name__)
 app.secret_key = get_secret_key()
@@ -171,6 +174,12 @@ def get_fields():
     fields = get_users_field_details(user_id)
     print(fields)
     return jsonify(fields or [])
+
+@app.route('/api/generate-barcode', methods=['POST'])
+@auth.login_required
+def generate_barcode():
+    barcode=generate_new_chat_code()
+    return jsonify({'barcode': barcode})
 
 
 if __name__ == '__main__':

@@ -306,6 +306,10 @@ class Database:
         query = "DELETE FROM scan_history_chat WHERE chat_code = %s"
         return self.input_error_handler(query, (chat_code,))
 
+    def get_chat_codes(self):
+        query = "select chat_code from scan_history_chat order by chat_code ;"
+        return self.fetch_data_handler(query)
+
     #-----------------------------------------------------------------------------
     # user scan history table operations
     #-----------------------------------------------------------------------------
@@ -441,11 +445,11 @@ class Database:
         query = """
                 select *
                 from scan_history_chat as shc inner join detection as d on shc.scan_id = d.scan_id
-                where chat_code== %S
+                where chat_code== %s
                 order by shc.chat_created_timestamp desc
                 LIMIT 1;
         """
-        return self.input_error_handler(query, (chat_code,))
+        return self.fetch_data_handlerfetch_data_handler(query, (chat_code,))
 
 
     # applied treatment table operations

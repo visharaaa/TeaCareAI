@@ -75,6 +75,55 @@
 .severity-medium { color: #d97706; font-weight: 700; }
 .severity-high   { color: #dc2626; font-weight: 700; }
 
+/* ── Barcode input with generate button ── */
+.barcode-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.barcode-input-wrap .text-field {
+    padding-right: 44px;
+}
+
+.barcode-gen-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.barcode-gen-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.barcode-gen-btn:hover svg {
+    stroke: #fff;
+}
+
+.barcode-gen-btn:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+.barcode-gen-btn.loading svg {
+    animation: barcode-spin 0.7s linear infinite;
+}
+
+@keyframes barcode-spin { to { transform: rotate(360deg); } }
+
 /* ── Severity badge ── */
 .severity-badge {
     display: inline-block;
@@ -254,7 +303,15 @@
                         </svg>
                         Barcode / Plant ID
                     </label>
-                    <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
+                    <div class="barcode-input-wrap">
+                        <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
+                        <button type="button" class="barcode-gen-btn" id="barcode-gen-btn" title="Auto-generate barcode" onclick="generateBarcode()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -355,5 +412,25 @@
     <script>
         const dbRecords = {{ records | tojson }};
         loadHistoryFromDB(dbRecords);
+
+        async function generateBarcode() {
+            const btn = document.getElementById('barcode-gen-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/generate-barcode', { method: 'POST' });
+                if (!res.ok) throw new Error('Request failed');
+                const data = await res.json();
+                document.getElementById('barcode-input').value = data.barcode;
+                checkScanReady();
+            } catch (err) {
+                console.error('Barcode generation failed:', err);
+                alert('Could not generate barcode. Please try again.');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
     </script>
 {% endblock %}

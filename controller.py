@@ -482,7 +482,7 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
         print(e)
 
     finally:
-        if not (recommendation_result & applied_treatment_result):
+        if not (recommendation_result and applied_treatment_result):
             print('Deleting recommendation...')
             db.remove_detection_by_detection_id(detection_id)
             db.remove_applied_treatment(detection_id)
@@ -502,3 +502,13 @@ def get_weather_data(latitude,longitude):
     temperature-=273.15
     print(temperature)
     return {'humidity':humidity, 'temperature':temperature}
+
+def generate_new_chat_code():
+    current_chat_codes = list(db.get_chat_codes().values())
+    if not(current_chat_codes):
+        return str(0)
+    max=max(current_chat_codes)
+    for i in range(0,max+1):
+        if i not in current_chat_codes:
+            return str(i)
+    return str(max+1)
