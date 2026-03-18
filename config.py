@@ -33,12 +33,12 @@ class Config:
 
     # 4. RAG & Treatment Settings
     VECTOR_DB_PATH = os.path.join(BASE_DIR, "data", "rag_kb")
-    KB_PATH=os.path.join(BASE_DIR, "data", "kb","treatments_data_v2.xlsx")
-    MODEL_VERSION=os.getenv("MODEL_VERSION")
+    KB_PATH=os.path.join(BASE_DIR, "data","treatments_data.xlsx")
+    MODEL_VERSION="llama3.1:8b"
 
     # NN Model Settings
     NN_MODEL_TRAIN_DATA_PATH=os.path.join(BASE_DIR,"data", "tea_health_dataset.xlsx")
-    NN_MODEL_PATH = os.path.join(BASE_DIR,"app", "models", "RecoveryTracker","tea_health_model.h5")
+    NN_MODEL_PATH = os.path.join(BASE_DIR,"app", "models", "RecoveryTracker","recovery_model.h5")
     NN_SCALER_PATH = os.path.join(BASE_DIR,"app", "models", "RecoveryTracker","scaler.pkl")
     NN_FEATURE_COLUMNS_PATH = os.path.join(BASE_DIR,"app", "models", "RecoveryTracker","feature_columns.pkl")
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import psycopg2
 from psycopg2.extras import Json
 from config import Config
@@ -377,7 +379,7 @@ class Database:
     # Validates all inputs then inserts a detection record
     def add_detection(self, detection_id:int, detection_code:str, scan_id:int, disease_id:int, confidence_score:float,
                       bounding_box:dict, severity_level:str, lesion_count:int, healthy_leaf_area:float,
-                      affected_area:float, image_name:str, recovery_percentage=0.00, status='new'):
+                      affected_area:float, image_name:str,recovery_percentage=0.00, status='new'):
 
         detection_id   = int(detection_id)
         detection_code = str(detection_code)
@@ -435,6 +437,15 @@ class Database:
         query = "DELETE FROM detection WHERE detection_id = %s"
         return self.input_error_handler(query, (detection_id,))
 
+    def detection_data_by_chat_code(self, chat_code):
+        query = """
+                select *
+                from scan_history_chat as shc inner join detection as d on shc.scan_id = d.scan_id
+                where chat_code== %S
+                order by shc.chat_created_timestamp desc
+                LIMIT 1;
+        """
+        return self.input_error_handler(query, (chat_code,))
 
 
     # applied treatment table operations

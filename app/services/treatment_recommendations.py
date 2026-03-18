@@ -3,7 +3,6 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import os
 import ollama
-import json
 from datetime import datetime
 import csv
 import logging
@@ -174,7 +173,7 @@ class TeaDiseaseRAG:
             final_response = f"Error generating ollama response: {str(e)}"
 
         # Log and return
-        self.log_request(query, severity, location, disease, confidence_percent, final_response)
+        #self.log_request(query, severity, location, disease, confidence_percent, final_response)
 
         return {
             "status": "success",
@@ -200,21 +199,21 @@ class TeaDiseaseRAG:
         return response
 
 
-if __name__ == "__main__":
-    # System initialization
-    rag_system = TeaDiseaseRAG(
-        excel_path = "../data_folder/treatments_data_v2.xlsx",
-        db_path = "chroma_DB"
-    )
-
-    # Run example query
-    result = rag_system.get_recommendation(
-        disease_name = "Blister Blight",
-        severity_level = "high",
-        location = "Hatton"
-    )
-
-    print("\nLLM response:")
-    print(result.get('llm_response', result.get('message')))
+# if __name__ == "__main__":
+#     # System initialization
+#     rag_system = TeaDiseaseRAG(
+#         excel_path = "../data_folder/treatments_data_v2.xlsx",
+#         db_path = "chroma_DB"
+#     )
+#
+#     # Run example query
+#     result = rag_system.get_recommendation(
+#         disease_name = "Blister Blight",
+#         severity_level = "high",
+#         location = "Hatton"
+#     )
+#
+#     print("\nLLM response:")
+#     print(result.get('llm_response', result.get('message')))
 
 

@@ -1,3 +1,5 @@
+import json
+
 from flask import url_for
 import os
 from datetime import datetime
@@ -11,7 +13,7 @@ import requests
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
 from app.services.treatment_recommendations import TeaDiseaseRAG
-from app.services.recovery_tracker import LeafEvaluator
+from app.services.recovery_tracker import TreatmentProgressTracker
 from config import Config
 
 
@@ -62,142 +64,11 @@ def tea_disease_identifier_worker():
         vision_queue.task_done()
 
 
-
-def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevation=2):
-    if not os.path.exists(Config.UPLOAD_FOLDER):
-        os.makedirs(Config.UPLOAD_FOLDER)
-
-
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"{timestamp}_{img.filename}"
-    file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
-    img.save(file_path)
-
-    # Create a private pager just for THIS specific web request
-    response_vision_queue = queue.Queue()
-    response_rag_queue=queue.Queue()
-    response_NN_queue=queue.Queue()
-
-
-    # Put the filename and the private pager into the task_queue
-    vision_queue.put((filename, response_vision_queue))
-
-    # The Flask route pauses right here and waits for the worker to finish the math
-    vision_result = response_vision_queue.get()
-
-    # prediction from disease identifier
-    disease_name=vision_result["disease_name"]
-    disease_identifier_confidence_score=round(vision_result["confident"],4)
-    infection_percentage=vision_result["infection_percentage"]
-    severity_level=vision_result["severity_level"]
-    healthy_leaf_area=vision_result["healthy_leaf_area"]
-    affected_area=vision_result["affected_area"]
-    lesion_count=vision_result["lesion_count"]
-    masks={'test':'Pass'}
-
-    # check: Did the worker return an error?
-    if isinstance(vision_result, Exception):
-        print(f"Prediction failed: {vision_result}")
-        return {'error': 'Failed to process image'}
-
-    # input for recovery_tracker
-    rag_input=(disease_name,severity_level)
-    rag_queue.put((rag_input, response_rag_queue))
-
-    recovery_percentage=0
-    already_has=True
-    status = 'new'
-
-    if already_has:
-
-        #get whether data like humidity and temperature
-        whether_data=get_weather_data(latitude,longitude)
-
-        # input for NN
-        NN_input = {
-            'healthy_leaf_area': healthy_leaf_area,
-            'affected_area_pre': 400,
-            'affected_area_post': 120,
-            'humidity_pct': whether_data['humidity'],
-            'temp_celsius': whether_data['temperature'],
-            'blister_blight': 0,
-            'brown_blight': 0,
-            'grey_blight': 0,
-            'red_rust': 0,
-            'helopeltis': 0
-        }
-
-        NN_input[disease_name]=1
-
-        NN_queue.put((NN_input, response_NN_queue))
-
-        # prediction from disease identifier
-        NN_result = response_NN_queue.get()
-
-        if isinstance(NN_result, Exception):
-            print(f"Prediction failed: {NN_result}")
-            return {'error': 'Failed to process Neural Network'}
-
-        recovery_percentage = NN_result
-
-    # prediction from disease identifier
-    rag_result = response_rag_queue.get()
-
-    if isinstance(rag_result, Exception):
-        print(f"Prediction failed: {rag_result}")
-        return {'error': 'Failed to get response RAG'}
-
-
-    #print(result)
-    print(f"rag_result : {rag_result}")
-    print(f"NN_result : {NN_result}")
-
-    llm_response, RAG_confidence_score=rag_result
-    print(f"recovery_percentage : {recovery_percentage}")
-
-    # save to database
-    try:
-        save_data(user_id=user_id,
-                  field_id=field_id,
-                  chat_code=chat_code,
-                  latitude=latitude,
-                  longitude=longitude,
-                  elevation=elevation,
-                  disease_name=disease_name,
-                  disease_identifier_confidence_score=float(disease_identifier_confidence_score),
-                  bounding_box=masks,
-                  severity_level=str(severity_level).lower(),
-                  lesion_count=int(lesion_count),
-                  healthy_leaf_area=int(healthy_leaf_area),
-                  affected_area=int(affected_area),
-                  image_name=str(filename),
-                  RAG_confidence_score=float(RAG_confidence_score),
-                  generated_advice=llm_response,
-                  status=str(status),
-                  recovery_percentage=float(recovery_percentage)
-                  )
-    except Exception as e:
-        print(f"Warning: could not save to DB: {e}")
-
-    result = {
-        'status':     standardize_disease_name(disease_name),
-        'confidence': str(disease_identifier_confidence_score) + '%',
-        'treatment':  llm_response,
-        'severity_level': severity_level,
-        'recovery_percentage': str(recovery_percentage),
-        'detection_status': status,
-        'barcode': chat_code,
-        'location': f"{latitude},{longitude}"
-    }
-    return result
-
-
-
 def tea_disease_rag_worker():
     print("Background TeaDiseaseRAG worker starting...")
 
     # Load the model into new object
-    tea_disease_rag=TeaDiseaseRAG(Config.KB_PATH,Config.VECTOR_DB_PATH)
+    tea_disease_rag=TeaDiseaseRAG(excel_path=Config.KB_PATH,db_path=Config.VECTOR_DB_PATH)
 
     print("TeaDiseaseRAG Model loaded successfully! Worker is ready.")
 
@@ -224,32 +95,22 @@ def tea_disease_rag_worker():
 
 def recovery_tracker_worker():
     print("Background RecoveryTracker worker starting...")
-    recovery_tracker=LeafEvaluator(
+    treatment_progress_tracker=TreatmentProgressTracker(
         model_path=Config.NN_MODEL_PATH,
         scaler_path=Config.NN_SCALER_PATH,
-        feature_path=Config.NN_FEATURE_COLUMNS_PATH
+        feature_cols_path=Config.NN_FEATURE_COLUMNS_PATH
     )
     print("LeafEvaluator Model loaded successfully! Worker is ready.")
     while True:
         try:
             inputs,response=NN_queue.get()
-            leaf_input = {
-            'Total_Leaf_Area_mm2': inputs['healthy_leaf_area'],
-            'Affected_Area_Pre': inputs['affected_area_pre'],
-            'Affected_Area_Post': inputs['affected_area_post'],
-            'Humidity_Pct': inputs['humidity_pct'],
-            'Temp_Celsius': inputs['temp_celsius'],
-            'Disease_Type_Blister Blight': inputs['blister_blight'],
-            'Disease_Type_Brown Blight': inputs['brown_blight'],
-            'Disease_Type_Grey Blight': inputs['grey_blight'],
-            'Disease_Type_Red Rust': inputs['red_rust'],
-            'Disease_Type_Red Spider': inputs['helopeltis'],
-        }
-
-
-            prediction=recovery_tracker.predict_improvement(leaf_input)
-            if prediction>=100:
-                prediction=100
+            prediction=treatment_progress_tracker.predict_recovery(
+                disease=inputs['disease'],
+                days_after_treatment=inputs['days_after_treatment'],
+                initial_affected_area_pct=inputs['initial_affected_area_pct'],
+                affected_area_pct=inputs['affected_area_pct'],
+                color_deviation=inputs['color_deviation'],
+                humidity=inputs['humidity'])
             response.put(prediction)
 
         except Exception as e:
@@ -258,6 +119,145 @@ def recovery_tracker_worker():
 
         finally:
             NN_queue.task_done()
+
+
+def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevation=2):
+    if not os.path.exists(Config.UPLOAD_FOLDER):
+        os.makedirs(Config.UPLOAD_FOLDER)
+
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"{timestamp}_{img.filename}"
+    file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+    img.save(file_path)
+
+    # Create a private pager just for THIS specific web request
+    response_vision_queue = queue.Queue()
+    response_rag_queue=queue.Queue()
+    response_NN_queue=queue.Queue()
+
+
+    # Put the filename and the private pager into the task_queue
+    vision_queue.put((filename, response_vision_queue))
+
+    # The Flask route pauses right here and waits for the worker to finish the math
+    vision_result = response_vision_queue.get()
+
+    # prediction from disease identifier
+    disease_name=vision_result["disease_name"]
+    disease_identifier_confidence_score=vision_result['confident']
+    infection_percentage=vision_result["infection_percentage"]
+    severity_level=vision_result["severity_level"]
+    healthy_leaf_area=vision_result["healthy_leaf_area"]
+    affected_area=vision_result["affected_area"]
+    lesion_count=vision_result["lesion_count"]
+    masks=vision_result['masks'],
+    color_deviation=vision_result['color_deviation']
+
+    # check: Did the worker return an error?
+    if isinstance(vision_result, Exception):
+        print(f"Prediction failed: {vision_result}")
+        return {'error': 'Failed to process image'}
+
+
+    # input for recovery_tracker
+    rag_input=(disease_name,severity_level)
+    rag_queue.put((rag_input, response_rag_queue))
+
+    detection_history=db.detection_data_by_chat_code(chat_code)
+    already_has=False
+    status = 'new'
+    recovery_percentage=0
+    if detection_history>0:
+        already_has=True
+
+    #latitude,longitude,elevation,detected_at,healthy_leaf_area,affected_area
+
+
+    if already_has:
+
+        #get whether data like humidity and temperature
+        whether_data=get_weather_data(latitude,longitude)
+
+        # input for NN
+        NN_input = {
+            'disease': disease_name,
+            'days_after_treatment': 3,
+            'initial_affected_area_pct': (detection_history["affected_area"]/detection_history["healthy_leaf_area"])*100,
+            'affected_area_pct': infection_percentage,
+            'color_deviation': color_deviation,
+            'humidity': whether_data["humidity"],
+        }
+
+        NN_queue.put((NN_input, response_NN_queue))
+
+        # prediction from disease identifier
+        NN_result = response_NN_queue.get()
+
+        if isinstance(NN_result, Exception):
+            print(f"Prediction failed: {NN_result}")
+            return {'error': 'Failed to process Neural Network'}
+
+        recovery_percentage = NN_result[0]
+        recovery_status = NN_result[1]
+
+
+    # prediction from disease identifier
+    rag_result = response_rag_queue.get()
+
+    if isinstance(rag_result, Exception):
+        print(f"Prediction failed: {rag_result}")
+        return {'error': 'Failed to get response RAG'}
+
+
+    #print(result)
+    #print(f"rag_result : {rag_result}")
+
+    llm_response, RAG_confidence_score=rag_result
+
+    #save to database
+    try:
+        save_data(
+              user_id=user_id,
+              field_id=field_id,
+              chat_code=chat_code,
+              latitude=latitude,
+              longitude=longitude,
+              elevation=elevation,
+              disease_name=disease_name,
+              disease_identifier_confidence_score=float(disease_identifier_confidence_score),
+              bounding_box=json.dumps(masks),
+              severity_level=str(severity_level).lower(),
+              lesion_count=int(lesion_count),
+              healthy_leaf_area=int(healthy_leaf_area),
+              affected_area=int(affected_area),
+              image_name=str(filename),
+              RAG_confidence_score=float(RAG_confidence_score),
+              generated_advice=llm_response,
+              status=str(status),
+              recovery_percentage=float(recovery_percentage)
+                  )
+    except Exception as e:
+        print(f"Warning: could not save to DB: {e}")
+
+    result = {
+        'status':     standardize_disease_name(disease_name),
+        'confidence': str(disease_identifier_confidence_score) + '%',
+        'treatment':  llm_response,
+        'severity_level': severity_level,
+        'recovery_percentage': str(recovery_percentage),
+        'detection_status': status,
+        'barcode': chat_code,
+        'location': f"{latitude},{longitude}"
+    }
+    return result
+
+
+
+
+
+
+
 
 def register_user(user_name, email, password, user_type):
 
@@ -357,7 +357,7 @@ def standardize_disease_name(disease_name):
 
 
 #scan_id and chat code are the same
-def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:dict,severity_level:str,lesion_count:int,
+def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
               healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
 
     #check the chat_code is already exist if result is None it means this is the first time of detection

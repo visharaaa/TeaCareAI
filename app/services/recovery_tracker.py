@@ -9,10 +9,10 @@ class TreatmentProgressTracker:
     # Load the three saved files from training ->
     # the neural network model, scaler which was fitted on the training data, and the feature column order
 
-    def __init__(self):
-        self.model        = load_model('recovery_model.h5', compile=False)
-        self.scaler       = joblib.load('scaler.pkl')
-        self.feature_cols = joblib.load('feature_columns.pkl')
+    def __init__(self,model_path='recovery_model.h5',scaler_path='recovery_scaler.sav',feature_cols_path='feature_columns.pkl'):
+        self.model        = load_model(model_path, compile=False)
+        self.scaler       = joblib.load(scaler_path)
+        self.feature_cols = joblib.load(feature_cols_path)
 
     # Define the inputs that are accepted by the method. six features are used here.
 
@@ -67,16 +67,16 @@ class TreatmentProgressTracker:
 
 
 # Example usage
-
-if __name__ == "__main__":
-
-    tracker = TreatmentProgressTracker()
-
-    tracker.predict_recovery(
-        disease='brown_blight',
-        days_after_treatment=3,
-        initial_affected_area_pct=40.0,
-        affected_area_pct=32.0,
-        color_deviation=0.12, # Color deviation has to be between 0 and 1
-        humidity=70.0
-    )
+#
+# if __name__ == "__main__":
+#
+#     tracker = TreatmentProgressTracker()
+#
+#     tracker.predict_recovery(
+#         disease='brown_blight',
+#         days_after_treatment=3,
+#         initial_affected_area_pct=40.0,
+#         affected_area_pct=32.0,
+#         color_deviation=0.12, # Color deviation has to be between 0 and 1
+#         humidity=70.0
+#     )

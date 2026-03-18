@@ -128,6 +128,7 @@ CREATE TABLE detection (
     recovery_percentage DECIMAL(5, 2)          DEFAULT 0.00,
     status              detection_status_enum  NOT NULL DEFAULT 'new',
     image_name          VARCHAR(255)  NOT NULL,
+    detected_at DATE NOT NULL DEFAULT NOW(),
     CONSTRAINT detection_pk               PRIMARY KEY (detection_id),
     CONSTRAINT detection_code_uk          UNIQUE (detection_code),
     CONSTRAINT detection_scan_fk          FOREIGN KEY (scan_id)    REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE,
@@ -178,3 +179,31 @@ CREATE INDEX idx_refresh_token_user  ON user_refresh_token(user_id);
 -- ============================================================
 --  END OF SCHEMA
 -- ============================================================
+
+
+INSERT INTO disease (disease_name, description, standard_symptoms) VALUES
+    (
+        'Blister Blight',
+        'A fungal disease caused by Exobasidium vexans, most prevalent in high-elevation wet zones. Highly destructive to young tea shoots and flushes.',
+        'Pale yellow translucent spots on young leaves; white powdery blisters on undersides; leaf distortion and curling; brownish necrotic patches on mature lesions'
+    ),
+    (
+        'Brown Blight',
+        'A fungal disease caused by Colletotrichum spp. commonly affecting tea during wet seasons. Causes significant yield loss through shoot dieback.',
+        'Water-soaked brown lesions on leaves and stems; dark brown to black necrotic areas; premature defoliation; dieback of young shoots; pinkish spore masses in humid conditions'
+    ),
+    (
+        'Gray Blight',
+        'A fungal disease caused by Pestalotiopsis spp. often occurring as secondary infection on already stressed or wounded tea plants.',
+        'Grayish-white irregular lesions on mature leaves; dark borders around lesions; black fruiting bodies visible on leaf surface; tip burn appearance; gradual spread from leaf margins inward'
+    ),
+    (
+        'Helopeltis',
+        'Insect pest damage caused by Helopeltis theivora (tea mosquito bug). One of the most economically damaging pests of tea plantations.',
+        'Dark brown to black lesions at feeding puncture sites; wilting and dieback of young shoots; characteristic cork-like scab formation; distorted and stunted new growth; shot-hole appearance on leaves'
+    ),
+    (
+        'Red Rust',
+        'An algal disease caused by Cephaleuros parasiticus affecting tea leaves and stems. More common in poorly maintained or nutrient-deficient plantations.',
+        'Rusty red or orange powdery patches on upper leaf surface; circular to irregular velvety growth; hair-like algal filaments visible; yellowing of surrounding tissue; premature leaf drop in severe cases'
+    );

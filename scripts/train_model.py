@@ -9,7 +9,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 # Load data
 # Read CSV into a dataframe and one-hot encode disease column (turn single text column to 5 binary columns)
-df = pd.read_csv('data/tea_leaf_recovery_v3.csv')
+df = pd.read_csv('../data/tea_leaf_recovery_v3.csv')
 df = pd.get_dummies(df, columns=['disease'], prefix='disease')
 
 # X contains all the input features -> all except the target variable
@@ -58,9 +58,9 @@ history = model.fit(
 )
 
 # Save
-model.save('recovery_model.h5') # Trained NN
-joblib.dump(scaler, 'scaler.pkl') # Fitted scaler for new inputs to be scaled the same way
-joblib.dump(list(X.columns), 'feature_columns.pkl') # Saves column order for inputs to always be fed in the correct order
-joblib.dump({'X_test': X_test_scaled, 'y_test': y_test.values, 'history': history.history}, 'test_data.pkl') # Saves test set and training history
+model.save('../app/models/RecoveryTracker/recovery_model.h5') # Trained NN
+joblib.dump(scaler, '../app/models/RecoveryTracker/scaler.pkl') # Fitted scaler for new inputs to be scaled the same way
+joblib.dump(list(X.columns), '../app/models/RecoveryTracker/feature_columns.pkl') # Saves column order for inputs to always be fed in the correct order
+joblib.dump({'X_test': X_test_scaled, 'y_test': y_test.values, 'history': history.history}, '../app/models/RecoveryTracker/test_data.pkl') # Saves test set and training history
 
 print("\nSaved: recovery_model.h5, scaler.pkl, feature_columns.pkl, test_data.pkl")
