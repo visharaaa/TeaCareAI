@@ -1,11 +1,12 @@
 .idea/
 data/
-.env
-__pycache__/
-static/uploaded_leaves/
-app/database/__pycache__/
-app/database/RAG_kb/
-app/services/__pycache__/
-test_db.ipynb
-test_NN.ipynb
+.conda/
+tea_disease_model/
 .vscode/
+uploaded_images/
+test.ipynb
+final dataset/
+.idea/
+runs/
+test.*
+__pycache__/
