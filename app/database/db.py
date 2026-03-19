@@ -330,11 +330,16 @@ class Database:
                 dis.disease_name,
                 d.confidence_score,
                 tr.generated_advice        AS treatment,
-                shc.longitude              AS location,
-                d.detection_code,
+                field_name                 as field_name,
+                shc.longitude              AS longitude,
+                chat_code                  as barcode,
                 d.image_name               AS imageDataUrl,
-                shc.chat_created_timestamp AS date
-            FROM user_scan_history         AS ush
+                shc.chat_created_timestamp AS date,
+                severity_level,
+                recovery_percentage        as recovery_percentage,
+                status                     as detection_status
+            FROM field as f
+                INNER JOIN user_scan_history      AS ush on f.field_id = ush.field_id
                 INNER JOIN scan_history_chat      AS shc ON ush.scan_id          = shc.scan_id
                 INNER JOIN detection              AS d   ON shc.scan_id          = d.scan_id
                 INNER JOIN disease                AS dis ON d.disease_id         = dis.disease_id
@@ -449,7 +454,7 @@ class Database:
                 order by shc.chat_created_timestamp desc
                 LIMIT 1;
         """
-        return self.fetch_data_handlerfetch_data_handler(query, (chat_code,))
+        return self.fetch_data_handler(query, (chat_code,))
 
 
     # applied treatment table operations

@@ -507,9 +507,16 @@ const historyViewImg   = document.getElementById('history-view-img');
 const historyViewNoImg = document.getElementById('history-view-no-img');
 const newScanBtn       = document.getElementById('new-scan-btn');
 
+const fieldsRowEl       = document.querySelector('.fields-row');
+const scanBtnEl         = document.getElementById('scan-button');
+const noFieldsWarningEl = document.getElementById('no-fields-warning');
+
 function enterHistoryView(imageUrl) {
-    dropZoneEl.style.display    = 'none';
-    historyViewer.style.display = 'block';
+    dropZoneEl.style.display        = 'none';
+    historyViewer.style.display     = 'block';
+    fieldsRowEl.style.display       = 'none';
+    scanBtnEl.style.display         = 'none';
+    if (noFieldsWarningEl) noFieldsWarningEl.style.display = 'none';
     if (imageUrl) {
         historyViewImg.src             = imageUrl;
         historyViewImg.style.display   = 'block';
@@ -521,8 +528,10 @@ function enterHistoryView(imageUrl) {
 }
 
 function exitHistoryView() {
-    historyViewer.style.display = 'none';
-    dropZoneEl.style.display    = 'block';
+    historyViewer.style.display  = 'none';
+    dropZoneEl.style.display     = 'block';
+    fieldsRowEl.style.display    = '';
+    scanBtnEl.style.display      = '';
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     resultCard.style.display = 'none';
 }

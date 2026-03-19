@@ -8,7 +8,7 @@ import queue
 import bcrypt
 from datetime import timedelta
 import requests
-
+from sympy.parsing.sympy_parser import null
 
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
@@ -168,8 +168,9 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
     already_has=False
     status = 'new'
     recovery_percentage=0
-    if detection_history>0:
+    if detection_history!=None:
         already_has=True
+        status="under_treatment"
 
     #latitude,longitude,elevation,detected_at,healthy_leaf_area,affected_area
 
@@ -302,12 +303,16 @@ def load_user_chat(user_id):
 
         data.append({
             'disease_name': record.get('disease_name', 'Unknown'),
-            'confidence':   str(round(record.get('confidence_score', 0), 2) * 100) + '%',
+            'confidence':   str(record.get('confidence_score'))+ '%',
             'treatment':    record.get('treatment', ''),
-            'location':     record.get('location', '—'),
-            'barcode':      record.get('detection_code', '—'),
+            'field_name': record.get('field_name', ''),
+            'location':     record.get('longitude', '—'),
+            'barcode':      record.get('barcode', '—'),
             'imageDataUrl': image_url,
-            'date':         record.get('date', '—')
+            'date':         record.get('date', '—'),
+            'severity_level': record.get('severity_level', ''),
+            'recovery_percentage': str(record.get('recovery_percentage', 0)) + '%',
+            'detection_status':record.get('detection_status', ''),
         })
 
     print(data)
@@ -504,11 +509,18 @@ def get_weather_data(latitude,longitude):
     return {'humidity':humidity, 'temperature':temperature}
 
 def generate_new_chat_code():
-    current_chat_codes = list(db.get_chat_codes().values())
+    results=db.get_chat_codes()
+    current_chat_codes=[]
+    for result in results:
+        current_chat_codes.append(int(result['chat_code']))
     if not(current_chat_codes):
-        return str(0)
-    max=max(current_chat_codes)
-    for i in range(0,max+1):
+        return decimal_to_hex(1)
+    max_code=max(current_chat_codes)
+    for i in range(1,max_code+1):
         if i not in current_chat_codes:
-            return str(i)
-    return str(max+1)
+            return decimal_to_hex(i)
+    return decimal_to_hex(max_code+1)
+
+def decimal_to_hex(number):
+    return hex(number)[2:].zfill(10)
+
