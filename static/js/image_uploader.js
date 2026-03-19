@@ -372,10 +372,16 @@ scanButton.addEventListener('click', async () => {
                 severityEl.textContent = '—';
             }
 
-            // ── Recovery — hide if status is 'new' ──
-            const recoveryRow = document.getElementById('recovery-row');
-            const recoveryEl  = document.getElementById('result-recovery');
-            const detectionStatus = (result.detection_status || result.status || '').toLowerCase();
+            // ── Recovery — hide percentage row if status is 'new', always show status badge ──
+            const recoveryRow       = document.getElementById('recovery-row');
+            const recoveryEl        = document.getElementById('result-recovery');
+            const recoveryStatusRow = document.getElementById('recovery-status-row');
+            const recoveryStatusEl  = document.getElementById('result-recovery-status');
+            const detectionStatus   = (result.detection_status || '').toLowerCase();
+
+            recoveryStatusEl.innerHTML      = renderRecoveryStatusBadge(detectionStatus);
+            recoveryStatusRow.style.display = '';
+
             if (detectionStatus === 'new') {
                 recoveryRow.style.display = 'none';
             } else {
@@ -476,9 +482,15 @@ function renderHistory() {
             }
 
             // ── Recovery ──
-            const recoveryRow = document.getElementById('recovery-row');
-            const recoveryEl  = document.getElementById('result-recovery');
+            const recoveryRow       = document.getElementById('recovery-row');
+            const recoveryEl        = document.getElementById('result-recovery');
+            const recoveryStatusRow = document.getElementById('recovery-status-row');
+            const recoveryStatusEl  = document.getElementById('result-recovery-status');
             const dStatus = (entry.detection_status || '').toLowerCase();
+
+            recoveryStatusEl.innerHTML      = renderRecoveryStatusBadge(dStatus);
+            recoveryStatusRow.style.display = '';
+
             if (dStatus === 'new') {
                 recoveryRow.style.display = 'none';
             } else {
@@ -512,10 +524,10 @@ const scanBtnEl         = document.getElementById('scan-button');
 const noFieldsWarningEl = document.getElementById('no-fields-warning');
 
 function enterHistoryView(imageUrl) {
-    dropZoneEl.style.display        = 'none';
-    historyViewer.style.display     = 'block';
-    fieldsRowEl.style.display       = 'none';
-    scanBtnEl.style.display         = 'none';
+    dropZoneEl.style.display    = 'none';
+    historyViewer.style.display = 'block';
+    fieldsRowEl.style.display   = 'none';
+    scanBtnEl.style.display     = 'none';
     if (noFieldsWarningEl) noFieldsWarningEl.style.display = 'none';
     if (imageUrl) {
         historyViewImg.src             = imageUrl;
@@ -528,10 +540,10 @@ function enterHistoryView(imageUrl) {
 }
 
 function exitHistoryView() {
-    historyViewer.style.display  = 'none';
-    dropZoneEl.style.display     = 'block';
-    fieldsRowEl.style.display    = '';
-    scanBtnEl.style.display      = '';
+    historyViewer.style.display = 'none';
+    dropZoneEl.style.display    = 'block';
+    fieldsRowEl.style.display   = '';
+    scanBtnEl.style.display     = '';
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     resultCard.style.display = 'none';
 }
@@ -551,16 +563,37 @@ clearHistoryBtn.addEventListener('click', () => {
 function loadHistoryFromDB(records) {
     if (!Array.isArray(records) || records.length === 0) { renderHistory(); return; }
     analysisHistory = records.map(record => ({
-        status:       record.disease_name || 'Unknown',
-        confidence:   record.confidence   || '--%',
-        treatment:    record.treatment    || 'No treatment data available.',
-        field:        record.field_name   || '—',
-        location:     record.longitude    || '—',
-        barcode:      record.barcode      || '—',
-        imageDataUrl: record.imageDataUrl || null,
-        date:         record.date         || '—'
+        status:              record.disease_name      || 'Unknown',
+        confidence:          record.confidence        || '--%',
+        treatment:           record.treatment         || 'No treatment data available.',
+        field:               record.field_name        || '—',
+        location:            record.location          || '—',
+        barcode:             record.barcode           || '—',
+        imageDataUrl:        record.imageDataUrl      || null,
+        date:                record.date              || '—',
+        severity_level:      record.severity_level    || '—',
+        recovery_percentage: record.recovery_percentage != null ? record.recovery_percentage : null,
+        detection_status:    record.detection_status  || 'new',
     }));
     renderHistory();
+}
+
+// ══════════════════════════════════════════
+// ── RECOVERY STATUS BADGE ──
+// ══════════════════════════════════════════
+
+function renderRecoveryStatusBadge(status) {
+    const map = {
+        'new':             'New',
+        'under_treatment': 'Under Treatment',
+        'recovered':       'Recovered',
+        'escalated':       'Escalated',
+    };
+    const label = map[status] || (status ? status.charAt(0).toUpperCase() + status.slice(1) : '—');
+    const cls   = map[status] ? status : '';
+    return cls
+        ? `<span class="recovery-badge ${cls}">${label}</span>`
+        : `<span>${label}</span>`;
 }
 
 // ── Init ──

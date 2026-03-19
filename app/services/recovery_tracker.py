@@ -51,17 +51,23 @@ class TreatmentProgressTracker:
         score        = round(float(np.clip(score, 0, 100)), 1)
 
         # Recovery status label specifications
-        if score >= 70:   status = "Good Recovery"
-        elif score >= 40: status = "Moderate Recovery"
-        else:             status = "Poor Recovery"
+        if score >= 70:   status = "good_recovery"
+        elif score >= 40: status = "moderate_recovery"
+        else:             status = "poor_recovery"
 
-        # Print report
-        print("\n--- Leaf Health Progress ---")
-        print(f"  Disease        : {disease.replace('_', ' ').title()}")
-        print(f"  Day            : {days_after_treatment}")
-        print(f"  Recovery Score : {score}%")
-        print(f"  Status         : {status}")
-        print("----------------------------\n")
+        if (initial_affected_area_pct-affected_area_pct)<0:
+            status = "escalated"
+            score = (initial_affected_area_pct-initial_affected_area_pct)*(-1)
+
+
+
+        # # Print report
+        # print("\n--- Leaf Health Progress ---")
+        # print(f"  Disease        : {disease.replace('_', ' ').title()}")
+        # print(f"  Day            : {days_after_treatment}")
+        # print(f"  Recovery Score : {score}%")
+        # print(f"  Status         : {status}")
+        # print("----------------------------\n")
 
         return score, status
 

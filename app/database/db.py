@@ -424,7 +424,7 @@ class Database:
             return {'error': 'recovery_percentage must be between 0 and 100'}
 
         status = str(status)
-        if status not in ('new', 'under_treatment', 'recovered', 'escalated'):
+        if status not in ('new','good_recovery','moderate_recovery','poor_recovery','escalated'):
             return {'error': 'status must be one of: new, under_treatment, recovered, escalated'}
 
         query = """
@@ -450,7 +450,7 @@ class Database:
         query = """
                 select *
                 from scan_history_chat as shc inner join detection as d on shc.scan_id = d.scan_id
-                where chat_code== %s
+                where chat_code= %s
                 order by shc.chat_created_timestamp desc
                 LIMIT 1;
         """

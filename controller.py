@@ -2,13 +2,13 @@ import json
 
 from flask import url_for
 import os
-from datetime import datetime
+from datetime import datetime, date, timezone
 import threading
 import queue
 import bcrypt
 from datetime import timedelta
 import requests
-from sympy.parsing.sympy_parser import null
+
 
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
@@ -166,11 +166,11 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
 
     detection_history=db.detection_data_by_chat_code(chat_code)
     already_has=False
-    status = 'new'
     recovery_percentage=0
-    if detection_history!=None:
+    recovery_status = 'new'
+    if detection_history != []:
         already_has=True
-        status="under_treatment"
+        detection_history=detection_history[0]
 
     #latitude,longitude,elevation,detected_at,healthy_leaf_area,affected_area
 
@@ -183,8 +183,8 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
         # input for NN
         NN_input = {
             'disease': disease_name,
-            'days_after_treatment': 3,
-            'initial_affected_area_pct': (detection_history["affected_area"]/detection_history["healthy_leaf_area"])*100,
+            'days_after_treatment': (datetime.now(timezone.utc) - detection_history['detected_at']).days,
+            'initial_affected_area_pct':float( (detection_history["affected_area"]/detection_history["healthy_leaf_area"])*100),
             'affected_area_pct': infection_percentage,
             'color_deviation': color_deviation,
             'humidity': whether_data["humidity"],
@@ -235,7 +235,7 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
               image_name=str(filename),
               RAG_confidence_score=float(RAG_confidence_score),
               generated_advice=llm_response,
-              status=str(status),
+              status=recovery_status,
               recovery_percentage=float(recovery_percentage)
                   )
     except Exception as e:
@@ -247,7 +247,7 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
         'treatment':  llm_response,
         'severity_level': severity_level,
         'recovery_percentage': str(recovery_percentage),
-        'detection_status': status,
+        'detection_status': format_recovery_status(recovery_status),
         'barcode': chat_code,
         'location': f"{latitude},{longitude}"
     }
@@ -311,8 +311,8 @@ def load_user_chat(user_id):
             'imageDataUrl': image_url,
             'date':         record.get('date', '—'),
             'severity_level': record.get('severity_level', ''),
-            'recovery_percentage': str(record.get('recovery_percentage', 0)) + '%',
-            'detection_status':record.get('detection_status', ''),
+            'recovery_percentage': record.get('recovery_percentage', 0),
+            'detection_status':record.get('detection_status'),
         })
 
     print(data)
@@ -512,7 +512,7 @@ def generate_new_chat_code():
     results=db.get_chat_codes()
     current_chat_codes=[]
     for result in results:
-        current_chat_codes.append(int(result['chat_code']))
+        current_chat_codes.append(int(result['chat_code'],16))
     if not(current_chat_codes):
         return decimal_to_hex(1)
     max_code=max(current_chat_codes)
@@ -523,4 +523,21 @@ def generate_new_chat_code():
 
 def decimal_to_hex(number):
     return hex(number)[2:].zfill(10)
+
+
+def format_recovery_status(raw):
+    map = {
+        'new':               'New',
+        'good_recovery':     'Good Recovery',
+        'moderate_recovery': 'Moderate Recovery',
+        'poor_recovery':     'Poor Recovery',
+        'escalated':         'Escalated',
+    }
+
+    trimmed = (raw or '').strip().lower()
+
+    if trimmed in map:
+        return map[trimmed]
+
+    return trimmed.replace('_', ' ').title()
 

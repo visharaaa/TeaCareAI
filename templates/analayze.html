@@ -135,6 +135,20 @@
 .severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 .severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
 .severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+
+/* ── Recovery status badge ── */
+.recovery-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.recovery-badge.new              { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.recovery-badge.good_recovery    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+.recovery-badge.moderate_recovery{ background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+.recovery-badge.poor_recovery    { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+.recovery-badge.escalated        { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 </style>
 {% endblock %}
 
@@ -381,6 +395,10 @@
                     <div class="result-row">
                         <span class="result-label">Severity</span>
                         <span class="result-value" id="result-severity">—</span>
+                    </div>
+                    <div class="result-row" id="recovery-status-row">
+                        <span class="result-label">Recovery Status</span>
+                        <span class="result-value" id="result-recovery-status">—</span>
                     </div>
                     <div class="result-row" id="recovery-row">
                         <span class="result-label">Recovery</span>

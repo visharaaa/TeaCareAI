@@ -1,6 +1,3 @@
-import random
-from datetime import datetime
-
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import auth
 from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details,generate_new_chat_code

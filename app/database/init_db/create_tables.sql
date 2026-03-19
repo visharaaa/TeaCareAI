@@ -7,8 +7,9 @@ CREATE TYPE user_type_enum AS ENUM ('farmer', 'agronomist', 'admin', 'state');
 CREATE TYPE severity_level_enum AS ENUM ('low', 'medium', 'high');
 CREATE TYPE detection_status_enum AS ENUM (
     'new',
-    'under_treatment',
-    'recovered',
+    'good_recovery',
+    'moderate_recovery',
+    'poor_recovery',
     'escalated'
 );
 
@@ -128,7 +129,7 @@ CREATE TABLE detection (
     recovery_percentage DECIMAL(5, 2)          DEFAULT 0.00,
     status              detection_status_enum  NOT NULL DEFAULT 'new',
     image_name          VARCHAR(255)  NOT NULL,
-    detected_at DATE NOT NULL DEFAULT NOW(),
+    detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT detection_pk               PRIMARY KEY (detection_id),
     CONSTRAINT detection_code_uk          UNIQUE (detection_code),
     CONSTRAINT detection_scan_fk          FOREIGN KEY (scan_id)    REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE,
