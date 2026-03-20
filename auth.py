@@ -6,7 +6,6 @@ import bcrypt
 from flask import session, redirect, url_for, request, jsonify
 from controller import db
 
-
 # params=> raw_token
 # this function returns the hash of the token
 def hash_token(raw_token: str) -> str:
@@ -17,13 +16,12 @@ def hash_token(raw_token: str) -> str:
 def generate_refresh_token() -> str:
     return secrets.token_urlsafe(64)
 
-
 # params=> email, password, device_info, latitude, longitude
 # this function logs in the user and creates a new session
 # returns user data and error message if any
 # error message is None if no error
 def login_user(email: str, password: str, device_info: str = None, latitude=None, longitude=None):
-    user_data = db.get_use_data_by_email(email)
+    user_data = db.get_user_data_by_email(email)
     if not user_data:
         return None, "Invalid email or password."
 

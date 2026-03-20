@@ -1,9 +1,7 @@
 from datetime import datetime
-
 import psycopg2
 from psycopg2.extras import Json
 from tensorboard.compat.tensorflow_stub.dtypes import double
-
 from config import Config
 import json
 
@@ -174,7 +172,7 @@ class Database:
     # params=> email
     # this function returns user dict (with password hash) for login validation
     # returns user dict (with password hash) for login validation
-    def get_use_data_by_email(self, email):
+    def get_user_data_by_email(self, email):
         query = "SELECT user_id, user_code, user_name, email, password, user_type FROM users WHERE email = %s"
         return self.fetch_data_handler(query, (email,), fetch_all=False)
 
@@ -185,8 +183,9 @@ class Database:
         query = "SELECT user_id FROM users WHERE email = %s"
         return self.fetch_data_handler(query, (email,), fetch_all=False)
 
-
+    #-----------------------------------------------------------------------------
     # user refresh tokens table operations
+    #-----------------------------------------------------------------------------
 
     # params => user_id, token_hash, device_info, latitude, longitude, expires_at
     # this function stores a new hashed refresh token for session management
@@ -314,10 +313,16 @@ class Database:
         query = "DELETE FROM scan_history_chat WHERE chat_code = %s"
         return self.input_error_handler(query, (chat_code,))
 
+    # params => None
+    # this function returns all chat_codes in the scan_history_chat table
+    # returns list of chat_codes as dicts, or empty list on failure
     def get_chat_codes(self):
         query = "select chat_code from scan_history_chat order by chat_code ;"
         return self.fetch_data_handler(query)
 
+    # params => chat_code
+    # this function used to get the location data of a scan chat history by chat_code
+    # returns chat_code, latitude, longitude, elevation as dict, or None on failure
     def get_location_by_chat_code(self, chat_code):
         query="select chat_code,latitude as latitude,longitude as longitude,elevation as elevation  FROM scan_history_chat WHERE chat_code = %s"
         return self.fetch_data_handler(query, (chat_code,), fetch_all=False)
@@ -375,12 +380,13 @@ class Database:
         return result['disease_id'] if result else None
 
 
-
+    #-----------------------------------------------------------------------------
     # treatment recommendation table operations
+    #-----------------------------------------------------------------------------
 
-    # params => recommendation_id, recommendation_code, generated_advice,
-    #           RAG_confidence_score (0-100), model_version
-    # Inserts a new AI-generated treatment recommendation
+    # params => recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version
+    # this function inserts a new treatment recommendation
+    # returns True on success, False on failure
     def add_recommended_treatment(self, recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version=Config.MODEL_VERSION):
         query = """
             INSERT INTO treatment_recommendation(recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version)
@@ -389,8 +395,9 @@ class Database:
         return self.input_error_handler(query, (recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version))
 
 
-
+    #-----------------------------------------------------------------------------
     # detection table operations
+    #-----------------------------------------------------------------------------
 
     # params => detection_id, detection_code (20 chars), scan_id, disease_id,
     #           confidence_score (0-100), bounding_box (dict or JSON string),
@@ -398,6 +405,7 @@ class Database:
     #           healthy_leaf_area (0-100), affected_area (0-100),
     #           image_name, recovery_percentage (0-100), status
     # Validates all inputs then inserts a detection record
+    # returns True on success, dict with 'error' key on validation failure, False on database failure
     def add_detection(self, detection_id:int, detection_code:str, scan_id:int, disease_id:int, confidence_score:float,
                       bounding_box:dict, severity_level:str, lesion_count:int, healthy_leaf_area:float,
                       affected_area:float, image_name:str,recovery_percentage=0.00, status='new'):
@@ -468,15 +476,20 @@ class Database:
         """
         return self.fetch_data_handler(query, (chat_code,))
 
-
+    #-----------------------------------------------------------------------------
     # applied treatment table operations
+    #-----------------------------------------------------------------------------
 
     # params => detection_id, recommendation_id
     # Links a detection to its treatment recommendation
+    # returns True on success, False on failure
     def add_applied_treatment(self, detection_id, recommendation_id):
         query = "INSERT INTO applied_treatment(detection_id, recommendation_id) VALUES (%s, %s)"
         return self.input_error_handler(query, (detection_id, recommendation_id))
 
+    # params => detection_id
+    # this function removes all applied treatment records linked to a detection_id
+    # returns True on success, False on failure
     def remove_applied_treatment(self,detection_id):
         query = "DELETE FROM applied_treatment WHERE detection_id = %s"
         return self.input_error_handler(query, (detection_id,))

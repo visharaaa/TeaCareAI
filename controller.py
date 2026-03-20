@@ -1,12 +1,10 @@
 import json
-
 from flask import url_for
 import os
-from datetime import datetime, date, timezone
+from datetime import datetime, timezone,timedelta
 import threading
 import queue
 import bcrypt
-from datetime import timedelta
 import requests
 
 
@@ -16,85 +14,69 @@ from app.services.treatment_recommendations import TeaDiseaseRAG
 from app.services.recovery_tracker import TreatmentProgressTracker
 from config import Config
 
-
+# create a Database instance
 db = Database()
 
-
+# Create a threading lock to ensure that only one thread can access the model at a time
 threading_lock= threading.Lock()
+
+# Create separate queues for each model to handle the tasks
 vision_queue = queue.Queue()
 rag_queue = queue.Queue()
 NN_queue = queue.Queue()
 
-
-
+# Create a lock for database operations
 code_lock = threading.Lock()
 
-
-
-
-
-
+## params => None
+# This function will run in a separate thread and continuously process images from the vision_queue
 def tea_disease_identifier_worker():
     print("Background TeaDiseaseIdentifier worker starting...")
-
     # Load the model into new object
     tea_disease_identifier=TeaDiseaseIdentifier(Config.TEA_DISEASE_IDENTIFIER_MODEL_PATH,Config.UPLOAD_FOLDER)
-
     print("TeaDiseaseIdentifier Model loaded successfully! Worker is ready.")
-
     while True:
-
         #get the next image  from the queue
         file_name,response_queue=vision_queue.get()
-
         # Wait for the tread to be completely free
         with threading_lock:
             try:
                 # Process the one image.
                 result=tea_disease_identifier.get_disease(file_name)
-
                 # Put the result into this specific user's private pager
                 response_queue.put(result)
-
             except Exception as e:
                 # If the model crashes on a bad image, send the error back
                 response_queue.put(Exception(f"Error processing image: {str(e)}"))
-
         # Tell the main waiting room this task is officially done
         vision_queue.task_done()
 
-
+# params => None
+# This function will run in a separate thread and continuously process the RAG input from the rag_queue
 def tea_disease_rag_worker():
     print("Background TeaDiseaseRAG worker starting...")
-
     # Load the model into new object
     tea_disease_rag=TeaDiseaseRAG(excel_path=Config.KB_PATH,db_path=Config.VECTOR_DB_PATH)
-
     print("TeaDiseaseRAG Model loaded successfully! Worker is ready.")
-
     while True:
-
         # get the next disease from the queue
         inputs,response=rag_queue.get()
         disease_name, severity_level = inputs
-
         with threading_lock:
             try:
                 #getting the recommendations
                 llm_response,confidence=tea_disease_rag.get_treatment(disease_name, severity_level)
-
                 result=(llm_response,confidence)
                 response.put(result)
-
             except Exception as e:
                 # If the model crashes, send the error back
                 response.put(Exception(f"Error processing image: {str(e)}"))
-
         rag_queue.task_done()
 
-
+# This function will run in a separate thread and continuously process the input from the NN_queue
 def recovery_tracker_worker():
     print("Background RecoveryTracker worker starting...")
+    # Load the model into new object
     treatment_progress_tracker=TreatmentProgressTracker(
         model_path=Config.NN_MODEL_PATH,
         scaler_path=Config.NN_SCALER_PATH,
@@ -112,34 +94,31 @@ def recovery_tracker_worker():
                 color_deviation=inputs['color_deviation'],
                 humidity=inputs['humidity'])
             response.put(prediction)
-
         except Exception as e:
             # If the model crashes on a bad image, send the error back
             response.put(Exception(f"Error processing image: {str(e)}"))
-
         finally:
             NN_queue.task_done()
 
-
+# params => user_id, img, field_id, chat_code, latitude, longitude, elevation
+# This is the main function that the Flask route will call when it needs a prediction. 
+# It starts the background workers and processes the image through the queues.
+# returns error message if any step fails, otherwise returns the prediction result
 def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=None):
     if not os.path.exists(Config.UPLOAD_FOLDER):
         os.makedirs(Config.UPLOAD_FOLDER)
-
-
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"{timestamp}_{img.filename}"
     file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
     img.save(file_path)
 
-    # Create a private pager just for THIS specific web request
+    # Create a private pager
     response_vision_queue = queue.Queue()
     response_rag_queue=queue.Queue()
     response_NN_queue=queue.Queue()
 
-
     # Put the filename and the private pager into the task_queue
     vision_queue.put((filename, response_vision_queue))
-
     # The Flask route pauses right here and waits for the worker to finish the math
     vision_result = response_vision_queue.get()
 
@@ -159,12 +138,13 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
         print(f"Prediction failed: {vision_result}")
         return {'error': 'Failed to process image'}
 
-
     # input for recovery_tracker
     rag_input=(disease_name,severity_level)
     rag_queue.put((rag_input, response_rag_queue))
 
+    # get the detection history data using chat_code
     detection_history=db.detection_data_by_chat_code(chat_code)
+
     already_has=False
     recovery_percentage=0
     recovery_status = 'new'
@@ -204,7 +184,6 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
             'color_deviation': color_deviation,
             'humidity': whether_data["humidity"],
         }
-
         NN_queue.put((NN_input, response_NN_queue))
 
         # prediction from disease identifier
@@ -224,10 +203,6 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
     if isinstance(rag_result, Exception):
         print(f"Prediction failed: {rag_result}")
         return {'error': 'Failed to get response RAG'}
-
-
-    #print(result)
-    #print(f"rag_result : {rag_result}")
 
     llm_response, RAG_confidence_score=rag_result
 
@@ -252,7 +227,8 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
               generated_advice=llm_response,
               status=recovery_status,
               recovery_percentage=float(recovery_percentage)
-                  )
+              )
+        
     except Exception as e:
         print(f"Warning: could not save to DB: {e}")
 
@@ -266,11 +242,15 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
         'barcode': chat_code,
         'location': f"{latitude},{longitude}"
     }
+
     return result
 
-
+# params => user_name, email, password, user_type
+# This function will be called by the Flask route when a user tries to register a new account. 
+# It checks if the email is already in use, hashes the password, and then saves the new user to the database.
+# returns a tuple of (success: bool, message: str or None)
 def register_user(user_name, email, password, user_type):
-
+    
     #checking if the user already exists
     existing = db.check_email_exists(email)
     if existing:
@@ -287,29 +267,20 @@ def register_user(user_name, email, password, user_type):
 
     return (True, None) if result else (False, "Could not create account. Please try again.")
 
-#initialize the threads
-tea_disease_identifier_worker_thread = threading.Thread(target=tea_disease_identifier_worker, daemon=True) ## daemon=True means this thread will automatically shut down when kill the Flask server
-tea_disease_rag_worker_thread=threading.Thread(target=tea_disease_rag_worker,daemon=True)
-tea_recovery_tracker_worker_thread=threading.Thread(target=recovery_tracker_worker,daemon=True)
-
-#start the threads in background processing
-tea_disease_identifier_worker_thread.start()
-tea_disease_rag_worker_thread.start()
-tea_recovery_tracker_worker_thread.start()
-
-
+# params => user_id
+# This function will be called to load the user's chat history
+# It checks if the email exists, verifies the password
+# returns the user_id if successful
 def load_user_chat(user_id):
     records = db.get_user_chat_history_by_user_id(user_id)
     data = []
     for record in records:
-        # safely build image URL
         image_filename = record.get('imagedataurl') or ''
         image_url = None
         if image_filename:
             full_path = os.path.join('static', 'uploaded_leaves', image_filename)
             if os.path.exists(full_path):  # only include if file actually exists on disk
                 image_url = url_for('static', filename='uploaded_leaves/' + image_filename)
-
         data.append({
             'disease_name': record.get('disease_name', 'Unknown'),
             'confidence':   str(record.get('confidence_score'))+ '%',
@@ -323,18 +294,23 @@ def load_user_chat(user_id):
             'recovery_percentage': record.get('recovery_percentage', 0),
             'detection_status':record.get('detection_status'),
         })
-
-    print(data)
+    #print(data)
     return data
 
+# params => none
+# This function will retrun the secret key for Flask session management from the config file
 def get_secret_key():
     return Config.SECRET_KEY
 
+# params => none
+# This function will return the session lifetime for Flask session management from the config file
 def get_session_lifetime():
     return timedelta(hours=Config.SESSION_LIFETIME)
 
+# params => user_id, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age
+# This function will be called when the user adds a new field. 
+# It saves the field information to the database.
 def add_field_to_db(user_id, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age):
-
     # add field to the database
     result = db.add_field(
         user_id=user_id,
@@ -345,15 +321,20 @@ def add_field_to_db(user_id, field_name,field_latitude, field_longitude,field_el
         tea_variety=tea_variety,
         plant_age_in_years=plant_age
     )
-
     return result
 
-
+# params => user_id
+# This function will be called to get the field details for a specific user.
+# returns a list of fields associated with the user_id
 def get_users_field_details(user_id):
+    # Get the field details for the user from the database
     result=db.get_field_names_by_user_id(user_id)
     return result
 
-
+# params => disease_name
+# This function will use to standardize the disease name to make sure the disease name in database is consistent, 
+# which will avoid the error when query the disease_id by disease_name in database
+# return the standardized disease name
 def standardize_disease_name(disease_name):
     match disease_name:
         case 'blister_blight':
@@ -369,22 +350,30 @@ def standardize_disease_name(disease_name):
         case _:
             return disease_name
 
-
+# params => user_id, field_id, chat_code, latitude, longitude, elevation, disease_name, disease_identifier_confidence_score, bounding_box, severity_level, lesion_count, healthy_leaf_area, affected_area, image_name, RAG_confidence_score, generated_advice, recovery_percentage, status
+# This function will be called to save the detection and treatment data to the database after each detection.
+# returns a tuple of (success: bool, message: str)
 #scan_id and chat code are the same
 def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
               healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
 
-    #check the chat_code is already exist if result is None it means this is the first time of detection
-
     # Check if the chat_code already exists
     result=db.get_scan_chat_history_by_chat_code(chat_code)
 
+    # initialize the variables
     added=False
     scan_id = None
     already_there=False
     detection_id=None
     detection_code=None
+    user_scan_result = None
+    disease_id = None
+    detection_result = None
+    recommendation_result = None
+    applied_treatment_result = None
 
+    # result is not None means this chat_code already exists in the database, which means this is not the first time to detect for this chat, 
+    # just need to add the new detection data to the detection table and link it with the scan_history_chat table
     if result:
         # If it exists, extract the integer scan_id
         scan_id = result.get('scan_id')
@@ -408,14 +397,14 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             if not creation_result:
                 return False,'Error when creating new scan history.'
 
+        # get chat_code and scan_id
         new_record = db.get_scan_chat_history_by_chat_code(chat_code)
         if new_record:
             scan_id = new_record.get('scan_id')
         else:
             return False, 'Error retrieving new scan ID.'
 
-    user_scan_result = None
-
+    # if not already_there means this is a new chat, need to add the relationship between user, field and scan history in the user_scan_history table
     if not already_there:
         try:
             #add the values to user_scan_history which table create relationship between user,field and scan_history_chat tables
@@ -428,14 +417,10 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
                 db.remove_scan_history_chat_by_chat_code(chat_code)
                 return False,'Error when linking user to scan history.'
 
-    disease_id = None
 
     try:
         # get the disease_id for the disease_name
         disease_id=db.get_disease_id_by_disease_name(standardize_disease_name(disease_name))
-
-        #remove the currently added records
-        #elimate the function if didn't return any id
     except Exception as e:
         print(e)
     finally:
@@ -444,14 +429,12 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
                 db.remove_scan_history_chat_by_chat_code(chat_code)
             return False,'Disease mismatch.'
 
-
-    detection_result = None
     try:
 
         #get new detection_id and detection_code
         detection_id,detection_code=db.get_new_detection_code()
 
-        # store the output from disease_identifier  and recovery traker
+        # store the output from disease_identifier and recovery traker into detection table in database
         detection_result = db.add_detection(
             detection_id=detection_id,
             detection_code=detection_code,
@@ -475,18 +458,18 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
                 db.remove_scan_history_chat_by_chat_code(chat_code)
             return False,'Error when adding new detection.'
 
-    recommendation_result = None
-    applied_treatment_result = None
     try:
         # get new recommendation_id and recommendation_code
         recommendation_id,recommendation_code=db.get_new_recommendation_code()
 
+        # save the treatment recommendation result into recommended_treatment table
         recommendation_result=db.add_recommended_treatment(
             recommendation_id=recommendation_id,
             recommendation_code=recommendation_code,
             generated_advice=generated_advice,
             RAG_confidence_score=RAG_confidence_score
         )
+        # link the detection and recommendation in the applied_treatment table
         applied_treatment_result=db.add_applied_treatment(
             detection_id=detection_id,
             recommendation_id=recommendation_id
@@ -507,7 +490,9 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
     print("added to db")
     return True,'Data added successfully.'
 
-
+# params => latitude, longitude
+# This function will be called to get the weather data from OpenWeatherMap API by latitude and longitude, which will be used as one of the input for recovery tracker model
+# returns a dictionary with humidity and temperature
 def get_weather_data(latitude,longitude):
     response = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={Config.OPENWEATHERMAP_API_KEY}")
     response=response.json()
@@ -517,6 +502,10 @@ def get_weather_data(latitude,longitude):
     print(temperature)
     return {'humidity':humidity, 'temperature':temperature}
 
+# params => None
+# This function is used to generate a new unique chat code for each new chat. 
+# It checks the existing chat codes in the database, finds the maximum one, and generates the next one in hexadecimal format.
+# returns a new unique chat code in hexadecimal format
 def generate_new_chat_code():
     results=db.get_chat_codes()
     current_chat_codes=[]
@@ -530,10 +519,16 @@ def generate_new_chat_code():
             return decimal_to_hex(i)
     return decimal_to_hex(max_code+1)
 
+# params => number
+# This function is used to convert a decimal number to a hexadecimal string, which will be used for generating chat codes. 
+# It ensures that the hexadecimal string is always 10 characters long by padding with zeros if necessary.
+# returns a hexadecimal string representation of the input number, padded to 10 characters
 def decimal_to_hex(number):
     return hex(number)[2:].zfill(10)
 
-
+# params => raw_recovery_status
+# This function is used to format the raw recovery status returned by the NN model into a more user-friendly format for display on the frontend.
+# returns a formatted string representation of the recovery status
 def format_recovery_status(raw):
     map = {
         'new':               'New',
@@ -542,11 +537,18 @@ def format_recovery_status(raw):
         'poor_recovery':     'Poor Recovery',
         'escalated':         'Escalated',
     }
-
     trimmed = (raw or '').strip().lower()
-
     if trimmed in map:
         return map[trimmed]
-
     return trimmed.replace('_', ' ').title()
 
+
+#initialize the threads
+tea_disease_identifier_worker_thread = threading.Thread(target=tea_disease_identifier_worker, daemon=True) ## daemon=True means this thread will automatically shut down when kill the Flask server
+tea_disease_rag_worker_thread=threading.Thread(target=tea_disease_rag_worker,daemon=True)
+tea_recovery_tracker_worker_thread=threading.Thread(target=recovery_tracker_worker,daemon=True)
+
+#start the threads in background processing
+tea_disease_identifier_worker_thread.start()
+tea_disease_rag_worker_thread.start()
+tea_recovery_tracker_worker_thread.start()

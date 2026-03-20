@@ -6,17 +6,14 @@ app = Flask(__name__)
 app.secret_key = get_secret_key()
 app.permanent_session_lifetime = get_session_lifetime()
 
-
 @app.route('/')
 def home():
     user = auth.get_current_user()
     return render_template('index.html', user=user)
 
-
 @app.route('/about')
 def about():
     return render_template('about.html')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,7 +45,6 @@ def login():
         return redirect(url_for('home'))
 
     return render_template('login.html')
-
 
 @app.route('/field/add', methods=['GET', 'POST'])
 @auth.login_required
@@ -89,12 +85,10 @@ def add_field():
 
     return render_template('add_field.html')
 
-
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     auth.logout_user()
     return redirect(url_for('login'))
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -131,7 +125,6 @@ def signup():
 
     return render_template('signup.html')
 
-
 @app.route('/analayze', methods=['GET', 'POST'])
 @auth.login_required
 def analayze():
@@ -161,7 +154,6 @@ def analayze():
 
     return render_template('analayze.html', records=data)
 
-
 @app.route('/api/fields', methods=['GET'])
 @auth.login_required
 def get_fields():
@@ -177,7 +169,6 @@ def get_fields():
 def generate_barcode():
     barcode=generate_new_chat_code()
     return jsonify({'barcode': barcode})
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
