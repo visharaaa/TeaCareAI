@@ -8,6 +8,7 @@ from datetime import datetime
 import csv
 import logging
 
+# Lowest confidence = 53.7
 # Logger configuration
 logging.basicConfig(level = logging.INFO, format = '%(asctime)s - %(levelname)s - %(message)s')
 
@@ -146,6 +147,19 @@ class TeaDiseaseRAG:
         treatments = best_match["treatments"]
         confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
 
+        # If low confidence
+        if confidence_percent < 50:
+            print(f"\nLow confidence match detected ({confidence_percent}%)")
+
+            # Show top 3
+            all_results = self.collection.query(
+                query_embeddings = [query_embedding],
+                n_results = 3,
+                include = ["metadatas"]
+            )
+
+
+
         # Generate LLM Response
         llm_prompt = f"""
         You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response.
@@ -175,6 +189,7 @@ class TeaDiseaseRAG:
 
         # Log and return
         self.log_request(query, severity, location, disease, confidence_percent, final_response)
+        print(f"Confidence: {confidence_percent}%")
 
         return {
             "status": "success",
@@ -210,7 +225,7 @@ if __name__ == "__main__":
     # Run example query
     result = rag_system.get_recommendation(
         disease_name = "Blister Blight",
-        severity_level = "high",
+        severity_level = "Honda",
         location = "Hatton"
     )
 
