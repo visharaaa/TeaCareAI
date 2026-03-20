@@ -2,6 +2,8 @@ from datetime import datetime
 
 import psycopg2
 from psycopg2.extras import Json
+from tensorboard.compat.tensorflow_stub.dtypes import double
+
 from config import Config
 import json
 
@@ -257,6 +259,12 @@ class Database:
         """
         return self.input_error_handler(query, (field_name, field_latitude, field_longitude, field_elevation, tea_variety, plant_age_in_years, field_id))
 
+    #params => field_id
+    #this function get the field's location data using field_id
+    #retun field_id, latitude, longitude, elevation as dict, or None on failure
+    def get_field_location_by_field_id(self, field_id):
+        query = "SELECT field_id,field_latitude as latitude,field_longitude as longitude,field_elevation as elevation FROM field WHERE field_id = %s;"
+        return self.fetch_data_handler(query, (field_id,), fetch_all=False)
 
     #-----------------------------------------------------------------------------
     # scan history chat table operations
@@ -309,6 +317,10 @@ class Database:
     def get_chat_codes(self):
         query = "select chat_code from scan_history_chat order by chat_code ;"
         return self.fetch_data_handler(query)
+
+    def get_location_by_chat_code(self, chat_code):
+        query="select chat_code,latitude as latitude,longitude as longitude,elevation as elevation  FROM scan_history_chat WHERE chat_code = %s"
+        return self.fetch_data_handler(query, (chat_code,), fetch_all=False)
 
     #-----------------------------------------------------------------------------
     # user scan history table operations

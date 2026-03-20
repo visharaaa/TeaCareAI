@@ -121,7 +121,7 @@ def recovery_tracker_worker():
             NN_queue.task_done()
 
 
-def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevation=2):
+def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=None):
     if not os.path.exists(Config.UPLOAD_FOLDER):
         os.makedirs(Config.UPLOAD_FOLDER)
 
@@ -168,14 +168,29 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
     already_has=False
     recovery_percentage=0
     recovery_status = 'new'
+
+    # detection_history empty mean this is a new chat
     if detection_history != []:
         already_has=True
         detection_history=detection_history[0]
 
-    #latitude,longitude,elevation,detected_at,healthy_leaf_area,affected_area
-
-
+    # this chat already has mean this is the second time of detection, which means the user has applied the treatment and want to check the recovery status
     if already_has:
+
+        # if location data is empty getting the location data from database by chat_code in scan_history_chat table
+        if latitude == '' or longitude == '':
+            result = db.get_location_by_chat_code(
+                chat_code)  # to avoid the result= None error when the chat_code is not exist in the database
+            if result != None:
+                if None not in result.values():  # to avoid the location data be None which will cause the error when convert to float
+                    latitude = str(result['latitude'])
+                    longitude = str(result['longitude'])
+
+        # if location data is empty getting the location data from database by field in field table
+        if latitude == '' or longitude == '':
+            result = db.get_field_location_by_field_id(field_id)
+            latitude = str(result['latitude'])
+            longitude = str(result['longitude'])
 
         #get whether data like humidity and temperature
         whether_data=get_weather_data(latitude,longitude)
@@ -252,12 +267,6 @@ def predict(user_id,img,field_id, chat_code:str,latitude=10, longitude=20,elevat
         'location': f"{latitude},{longitude}"
     }
     return result
-
-
-
-
-
-
 
 
 def register_user(user_name, email, password, user_type):

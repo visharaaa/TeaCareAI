@@ -2,7 +2,6 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-
 import bcrypt
 from flask import session, redirect, url_for, request, jsonify
 from controller import db
