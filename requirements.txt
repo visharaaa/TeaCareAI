@@ -1,8 +1,20 @@
-seaborn
-joblib==1.5.3
-matplotlib-inline==0.1.7
-numpy==2.4.2
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+flask==3.1.3
+gunicorn==23.0.0
+psycopg2-binary==2.9.10
+torch==2.6.0+cu128
+torchvision==0.21.0+cu128
+opencv-python==4.11.0.86
+cvzone==1.6.1
+ultralytics==8.3.156
+sentence-transformers==3.4.1
+chromadb==0.6.3
+ollama==0.4.7
+pandas==2.2.3
 openpyxl==3.1.5
-pandas==3.0.0
-scikit-learn==1.8.0
-tensorflow==2.20.0
+tensorflow==2.18.0
+joblib==1.4.2
+bcrypt==4.3.0
+python-dotenv==1.1.0
+requests==2.32.3
