@@ -158,7 +158,17 @@ class TeaDiseaseRAG:
                 include = ["metadatas"]
             )
 
+            print("System is not very confident about this match.")
+            print("Following are some matches")
+            for i, meta in enumerate(all_results["metadatas"][0]):
+                print(f"{i + 1} . {meta['disease']} - {meta['severity']} severity")
 
+            print("\nPlease try again and enter a correct query.")
+
+            return {
+                "status": "low_confidence",
+                "message": "Low confidence match. Please enter a correct query."
+            }
 
         # Generate LLM Response
         llm_prompt = f"""
