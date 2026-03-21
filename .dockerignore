@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# uv / venv
+.venv/
+.python-version
+
+# env secrets
+.env
+
+# git
+.git
+.gitignore
+
+# large runtime files — mounted as volumes instead
+static/uploaded_leaves/
+app/models/
+data/rag_kb/
+
+# dev tools
+*.md
+.vscode/
