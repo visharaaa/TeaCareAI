@@ -33,15 +33,3 @@ By taking a **disease name and severity level** as input, the system returns:
 - **Clean Architecture:** Modular class-based design using the `TeaDiseaseRAG` class.
 
 ---
-
-## 📂 Folder Structure
-
-DemoComponentTwo/
-├── data_folder/
-│   └── treatments_data_v2.xlsx      # Knowledge Base (15 unique entries)
-├── chroma_db_manual/                # Vector Database (Persistent store)
-├── rag_version_2.py                 # Main RAG Engine (TeaDiseaseRAG class)
-├── output.json                      # Cache of the last query result
-├── rag_log.csv                      # Historical query and evaluation log
-├── README.md                        # Documentation
-└── requirements.txt                 # Project dependencies
