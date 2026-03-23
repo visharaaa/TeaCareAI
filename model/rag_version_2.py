@@ -1,12 +1,11 @@
-import pandas as pd
-from sentence_transformers import SentenceTransformer
-import chromadb
-import os
-import ollama
-import json
-from datetime import datetime
 import csv
 import logging
+import os
+from datetime import datetime
+import chromadb
+import ollama
+import pandas as pd
+from sentence_transformers import SentenceTransformer
 
 # Lowest confidence = 53.7
 # Logger configuration
@@ -225,6 +224,7 @@ class TeaDiseaseRAG:
         return response
 
 
+# Main
 if __name__ == "__main__":
     # System initialization
     rag_system = TeaDiseaseRAG(
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         db_path = "chroma_DB"
     )
 
-    # Run example query
+    # Run an example query
     result = rag_system.get_recommendation(
         disease_name = "Blister Blight",
         severity_level = "Honda",
