@@ -86,7 +86,7 @@ def recovery_tracker_worker():
     while True:
         try:
             inputs,response=NN_queue.get()
-            prediction=treatment_progress_tracker.predict_recovery(
+            prediction=treatment_progress_tracker.check_progress(
                 disease=inputs['disease'],
                 days_after_treatment=inputs['days_after_treatment'],
                 initial_affected_area_pct=inputs['initial_affected_area_pct'],
@@ -193,8 +193,8 @@ def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=No
             print(f"Prediction failed: {NN_result}")
             return {'error': 'Failed to process Neural Network'}
 
-        recovery_percentage = NN_result[0]
-        recovery_status = NN_result[1]
+        recovery_percentage = NN_result["change"]
+        recovery_status = NN_result["status"]
 
 
     # prediction from disease identifier
@@ -362,10 +362,8 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
 
     # initialize the variables
     added=False
-    scan_id = None
     already_there=False
     detection_id=None
-    detection_code=None
     user_scan_result = None
     disease_id = None
     detection_result = None
@@ -410,7 +408,7 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             #add the values to user_scan_history which table create relationship between user,field and scan_history_chat tables
             user_scan_result=db.add_user_scan_history(user_id, field_id, scan_id)
         except Exception as e:
-            print(e)
+            print(f" error : {e}")
         finally:
             if (not user_scan_result) and added:
                 # delete the row which is last added
@@ -450,6 +448,8 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
             recovery_percentage=recovery_percentage,
             status=status
         )
+    except ValueError as e:
+        print(e)
     except Exception as e:
         print(e)
     finally:
@@ -531,11 +531,10 @@ def decimal_to_hex(number):
 # returns a formatted string representation of the recovery status
 def format_recovery_status(raw):
     map = {
-        'new':               'New',
-        'good_recovery':     'Good Recovery',
-        'moderate_recovery': 'Moderate Recovery',
-        'poor_recovery':     'Poor Recovery',
-        'escalated':         'Escalated',
+        'new':           'New',
+        'improving':     'Improving',
+        'stable':        'Stable',
+        'deteriorating': 'Deteriorating',
     }
     trimmed = (raw or '').strip().lower()
     if trimmed in map:

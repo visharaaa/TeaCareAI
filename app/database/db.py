@@ -413,39 +413,39 @@ class Database:
         detection_id   = int(detection_id)
         detection_code = str(detection_code)
         if len(detection_code) != 20:
-            return {'error': 'detection_code must be exactly 20 characters'}
+            raise ValueError ('detection_code must be exactly 20 characters long')
 
         scan_id    = int(scan_id)
         disease_id = int(disease_id)
 
         confidence_score = round(float(confidence_score), 2)
         if not (0 <= confidence_score <= 100):
-            return {'error': 'confidence_score must be between 0 and 100'}
+            raise ValueError ('confidence_score must be between 0 and 100')
 
         bounding_box = Json(json.loads(bounding_box)) if isinstance(bounding_box, str) else Json(bounding_box)
 
         severity_level = str(severity_level).lower()
         if severity_level not in ('low', 'medium', 'high'):
-            return {'error': 'severity_level must be one of: low, medium, high'}
+            raise ValueError ('severity_level must be one of: low, medium, high')
 
         lesion_count      = int(lesion_count)
 
         healthy_leaf_area = round(float(healthy_leaf_area), 2)
         if not (0 <= healthy_leaf_area):
-            return {'error': 'healthy_leaf_area must be greater than 0'}
+            raise ValueError ('healthy_leaf_area must be greater than 0')
 
         affected_area = round(float(affected_area), 2)
         if not (0 <= affected_area):
-            return {'error': 'affected_area must be between greater than 0'}
+            raise ValueError ('affected_area must be between greater than 0')
 
         image_name = str(image_name)
         recovery_percentage = round(float(recovery_percentage), 2)
-        if not (0 <= recovery_percentage <= 100):
-            return {'error': 'recovery_percentage must be between 0 and 100'}
+        if not (abs(recovery_percentage)<=100):
+            raise ValueError ('recovery_percentage must be between -100 and 100')
 
         status = str(status)
-        if status not in ('new','good_recovery','moderate_recovery','poor_recovery','escalated'):
-            return {'error': 'status must be one of: new, under_treatment, recovered, escalated'}
+        if status not in ('new','improving','stable','deteriorating'):
+            raise ValueError ('status must be one of: new, under_treatment, recovered, escalated')
 
         query = """
             INSERT INTO detection(

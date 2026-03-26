@@ -67,21 +67,21 @@ class TreatmentProgressTracker:
 
         if change > 2:
             formated_output = f"Improving (+{change:.1f}%)"
-            status="Improving".lower()
+            status="improving"
         elif change < -2:
             formated_output = f"Deteriorating ({change:.1f}%)"
-            status="Deteriorating".lower()
+            status="deteriorating"
         else:
             formated_output = "Stable (0.0%)"
-            status="Stable".lower()
+            status="stable"
 
         # Print progress report
-        print("\n--- Treatment Progress Report ---")
-        print(f"  Disease             : {disease.replace('_', ' ').title()}")
-        print(f"  Days Since Treatment: {days_after_treatment}")
-        print(f"  Score at Day 0      : {initial_score}%")
-        print(f"  Current Score       : {current_score}%")
-        print(f"  Treatment Effect    : {formated_output}")
+        # print("\n--- Treatment Progress Report ---")
+        # print(f"  Disease             : {disease.replace('_', ' ').title()}")
+        # print(f"  Days Since Treatment: {days_after_treatment}")
+        # print(f"  Score at Day 0      : {initial_score}%")
+        # print(f"  Current Score       : {current_score}%")
+        # print(f"  Treatment Effect    : {formated_output}")
 
         result={
             'current_score' : current_score,

@@ -5,13 +5,7 @@
 -- ENUMS
 CREATE TYPE user_type_enum AS ENUM ('farmer', 'agronomist', 'admin', 'state');
 CREATE TYPE severity_level_enum AS ENUM ('low', 'medium', 'high');
-CREATE TYPE detection_status_enum AS ENUM (
-    'new',
-    'good_recovery',
-    'moderate_recovery',
-    'poor_recovery',
-    'escalated'
-);
+CREATE TYPE detection_status_enum AS ENUM ('new','improving','stable','deteriorating');
 
 -- ============================================================
 --  1. users
@@ -135,7 +129,7 @@ CREATE TABLE detection (
     CONSTRAINT detection_scan_fk          FOREIGN KEY (scan_id)    REFERENCES scan_history_chat(scan_id) ON DELETE CASCADE,
     CONSTRAINT detection_disease_fk       FOREIGN KEY (disease_id) REFERENCES disease(disease_id)        ON DELETE RESTRICT,
     CONSTRAINT detection_confidence_chk   CHECK (confidence_score   BETWEEN 0 AND 100),
-    CONSTRAINT detection_recovery_chk     CHECK (recovery_percentage BETWEEN 0 AND 100)
+    CONSTRAINT detection_recovery_chk     CHECK (recovery_percentage BETWEEN -100 AND 100)
 );
 
 -- ============================================================
