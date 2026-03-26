@@ -121,7 +121,7 @@ def signup():
         if error:
             return render_template('signup.html', error=error)
 
-        return render_template('signup.html', success='Account created! You can now log in.')
+        return redirect(url_for('home'))
 
     return render_template('signup.html')
 
