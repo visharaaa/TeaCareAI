@@ -90,13 +90,9 @@ pip install -r requirements.txt
 
 3. Ensure PostgreSQL is running and your `.env` matches it.
 
-4. Ensure Ollama is running and pull the model from `.env` if needed.
 
-```powershell
-ollama pull llama3.1:8b
-```
 
-5. Initialize database objects and seed data.
+4. Initialize database objects and seed data.
 
 ```powershell
 python bootstrap.py
