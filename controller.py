@@ -300,8 +300,13 @@ def load_user_chat(user_code):
     #print(data)
     return data
 
+def load_chat_code_drop_down(user_code):
+    user_id=db.get_user_id_by_user_code(user_code)
+    result=db.get_user_chat_code_by_user_id(user_id)
+    return result
+
 # params => none
-# This function will retrun the secret key for Flask session management from the config file
+# This function will return the secret key for Flask session management from the config file
 def get_secret_key():
     return Config.SECRET_KEY
 
@@ -361,10 +366,8 @@ def standardize_disease_name(disease_name):
 # This function will be called to save the detection and treatment data to the database after each detection.
 # returns a tuple of (success: bool, message: str)
 #scan_id and chat code are the same
-def save_data(user_code,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
+def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
               healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
-
-    user_id = db.get_user_id_by_user_code(user_code)
 
     # Check if the chat_code already exists
     result=db.get_scan_chat_history_by_chat_code(chat_code)

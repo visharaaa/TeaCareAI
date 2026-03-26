@@ -189,6 +189,16 @@ class Database:
         result=self.fetch_data_handler(query, (user_code,), fetch_all=False)
         return result['user_id']
 
+    def get_user_chat_code_by_user_id(self, user_id):
+        query = """
+                select chat_code
+                from user_scan_history as ush inner join scan_history_chat as shc on ush.scan_id = shc.scan_id
+                where user_id=%s
+                order by chat_created_timestamp desc;
+                """
+        return self.fetch_data_handler(query, (user_id,), fetch_all=True)
+
+
     #-----------------------------------------------------------------------------
     # user refresh tokens table operations
     #-----------------------------------------------------------------------------

@@ -58,6 +58,8 @@ barcodeInput.addEventListener('input', checkScanReady);
     const arrow    = document.getElementById('field-select-arrow');
     const errorMsg = document.getElementById('field-select-error');
 
+    if (!spinner || !arrow || !errorMsg) return;
+
     spinner.style.display = 'block';
 
     try {
@@ -84,7 +86,7 @@ barcodeInput.addEventListener('input', checkScanReady);
 
         spinner.style.display = 'none';
         arrow.style.display   = 'block';
-        checkScanReady(); // re-check after fields load
+        checkScanReady();
 
     } catch (err) {
         console.error('Failed to load fields:', err);
@@ -94,6 +96,85 @@ barcodeInput.addEventListener('input', checkScanReady);
         errorMsg.style.display = 'block';
     }
 })();
+
+
+// ══════════════════════════════════════════
+// ── BARCODE DROPDOWN — toggle custom list
+// ══════════════════════════════════════════
+
+let barcodeCodes    = [];
+let barcodesLoaded  = false;
+
+async function fetchBarcodeCodes() {
+    if (barcodesLoaded) return;
+    const loadingEl = document.getElementById('barcode-dropdown-loading');
+    try {
+        const res   = await fetch('/api/chat-codes');
+        if (!res.ok) throw new Error('Request failed');
+        barcodeCodes   = await res.json();
+        barcodesLoaded = true;
+        renderBarcodeList(barcodeCodes);
+    } catch (err) {
+        console.error('Failed to load barcodes:', err);
+        if (loadingEl) loadingEl.textContent = 'Could not load barcodes.';
+    }
+}
+
+function renderBarcodeList(codes) {
+    const list = document.getElementById('barcode-dropdown-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!codes || codes.length === 0) {
+        list.innerHTML = '<div class="barcode-dropdown-loading">No existing barcodes.</div>';
+        return;
+    }
+
+    codes.forEach(c => {
+        const item       = document.createElement('div');
+        item.className   = 'barcode-dropdown-item';
+        item.textContent = c.chat_code;
+        item.addEventListener('click', () => {
+            barcodeInput.value = c.chat_code;
+            closeBarcodeDropdown();
+            checkScanReady();
+        });
+        list.appendChild(item);
+    });
+}
+
+function toggleBarcodeDropdown() {
+    const list = document.getElementById('barcode-dropdown-list');
+    const btn  = document.getElementById('barcode-dropdown-btn');
+    if (!list) return;
+
+    const isOpen = list.style.display !== 'none';
+    if (isOpen) {
+        closeBarcodeDropdown();
+    } else {
+        list.style.display = 'block';
+        btn.classList.add('open');
+        fetchBarcodeCodes();
+        // close when clicking outside
+        setTimeout(() => document.addEventListener('click', outsideClickHandler), 0);
+    }
+}
+
+function closeBarcodeDropdown() {
+    const list = document.getElementById('barcode-dropdown-list');
+    const btn  = document.getElementById('barcode-dropdown-btn');
+    if (list) list.style.display = 'none';
+    if (btn)  btn.classList.remove('open');
+    document.removeEventListener('click', outsideClickHandler);
+}
+
+function outsideClickHandler(e) {
+    const wrap = document.querySelector('.barcode-combo-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        closeBarcodeDropdown();
+    }
+}
+
 
 
 // ══════════════════════════════════════════
@@ -372,16 +453,10 @@ scanButton.addEventListener('click', async () => {
                 severityEl.textContent = '—';
             }
 
-            // ── Recovery — hide percentage row if status is 'new', always show status badge ──
-            const recoveryRow       = document.getElementById('recovery-row');
-            const recoveryEl        = document.getElementById('result-recovery');
-            const recoveryStatusRow = document.getElementById('recovery-status-row');
-            const recoveryStatusEl  = document.getElementById('result-recovery-status');
-            const detectionStatus   = (result.detection_status || '').toLowerCase();
-
-            recoveryStatusEl.innerHTML      = renderRecoveryStatusBadge(detectionStatus);
-            recoveryStatusRow.style.display = '';
-
+            // ── Recovery — hide if status is 'new' ──
+            const recoveryRow = document.getElementById('recovery-row');
+            const recoveryEl  = document.getElementById('result-recovery');
+            const detectionStatus = (result.detection_status || result.status || '').toLowerCase();
             if (detectionStatus === 'new') {
                 recoveryRow.style.display = 'none';
             } else {
@@ -482,15 +557,9 @@ function renderHistory() {
             }
 
             // ── Recovery ──
-            const recoveryRow       = document.getElementById('recovery-row');
-            const recoveryEl        = document.getElementById('result-recovery');
-            const recoveryStatusRow = document.getElementById('recovery-status-row');
-            const recoveryStatusEl  = document.getElementById('result-recovery-status');
+            const recoveryRow = document.getElementById('recovery-row');
+            const recoveryEl  = document.getElementById('result-recovery');
             const dStatus = (entry.detection_status || '').toLowerCase();
-
-            recoveryStatusEl.innerHTML      = renderRecoveryStatusBadge(dStatus);
-            recoveryStatusRow.style.display = '';
-
             if (dStatus === 'new') {
                 recoveryRow.style.display = 'none';
             } else {
@@ -576,24 +645,6 @@ function loadHistoryFromDB(records) {
         detection_status:    record.detection_status  || 'new',
     }));
     renderHistory();
-}
-
-// ══════════════════════════════════════════
-// ── RECOVERY STATUS BADGE ──
-// ══════════════════════════════════════════
-
-function renderRecoveryStatusBadge(status) {
-    const map = {
-        'new':             'New',
-        'under_treatment': 'Under Treatment',
-        'recovered':       'Recovered',
-        'escalated':       'Escalated',
-    };
-    const label = map[status] || (status ? status.charAt(0).toUpperCase() + status.slice(1) : '—');
-    const cls   = map[status] ? status : '';
-    return cls
-        ? `<span class="recovery-badge ${cls}">${label}</span>`
-        : `<span>${label}</span>`;
 }
 
 // ── Init ──

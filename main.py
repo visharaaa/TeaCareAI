@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import auth
-from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details,generate_new_chat_code
+from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details,generate_new_chat_code,load_chat_code_drop_down
 
 app = Flask(__name__)
 app.secret_key = get_secret_key()
@@ -171,6 +171,13 @@ def get_fields():
 def generate_barcode():
     barcode=generate_new_chat_code()
     return jsonify({'barcode': barcode})
+
+@app.route('/api/chat-codes', methods=['GET'])
+@auth.login_required
+def get_chat_codes():
+    user_code = session.get('user_code')
+    codes = load_chat_code_drop_down(user_code)
+    return jsonify(codes or [])
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

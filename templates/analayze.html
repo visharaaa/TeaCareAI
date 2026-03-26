@@ -75,6 +75,104 @@
 .severity-medium { color: #d97706; font-weight: 700; }
 .severity-high   { color: #dc2626; font-weight: 700; }
 
+/* ── Barcode combo — single input + gen + dropdown ── */
+.barcode-combo-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.barcode-combo-input {
+    flex: 1;
+    border-radius: var(--radius-md) 0 0 var(--radius-md) !important;
+    border-right: none !important;
+    padding-right: 14px !important;
+}
+
+.barcode-combo-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(21,127,60,0.1);
+    z-index: 1;
+}
+
+.barcode-gen-btn {
+    width: 38px;
+    height: 42px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.barcode-gen-btn:hover { background: var(--primary); border-color: var(--primary); }
+.barcode-gen-btn:hover svg { stroke: #fff; }
+.barcode-gen-btn.loading svg { animation: barcode-spin 0.7s linear infinite; }
+@keyframes barcode-spin { to { transform: rotate(360deg); } }
+
+.barcode-dropdown-btn {
+    width: 36px;
+    height: 42px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-left: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+    color: var(--text-muted);
+}
+
+.barcode-dropdown-btn:hover { background: var(--primary-tint); color: var(--primary); }
+.barcode-dropdown-btn.open { background: var(--primary); color: #fff; border-color: var(--primary); }
+.barcode-dropdown-btn.open svg { stroke: #fff; }
+
+/* Custom dropdown list */
+.barcode-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1.5px solid var(--primary-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--card-shadow-lg);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.barcode-dropdown-loading {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.barcode-dropdown-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-heading);
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--primary-border);
+}
+
+.barcode-dropdown-item:last-child { border-bottom: none; }
+.barcode-dropdown-item:hover { background: var(--primary-tint); color: var(--primary); }
+
 /* ── Barcode input with generate button ── */
 .barcode-input-wrap {
     position: relative;
@@ -135,19 +233,6 @@
 .severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 .severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
 .severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-
-/* ── Recovery status badge ── */
-.recovery-badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 99px;
-    font-size: 12px;
-    font-weight: 700;
-}
-.recovery-badge.new          { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-.recovery-badge.improving    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-.recovery-badge.stable       { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
-.recovery-badge.deteriorating{ background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 </style>
 {% endblock %}
 
@@ -309,22 +394,45 @@
 
                 <!-- BARCODE -->
                 <div class="field-group">
-                    <label for="barcode-input">
+                    <label>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
                         </svg>
                         Barcode / Plant ID
                     </label>
-                    <div class="barcode-input-wrap">
-                        <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
-                        <button type="button" class="barcode-gen-btn" id="barcode-gen-btn" title="Auto-generate barcode" onclick="generateBarcode()">
+
+                    <!-- Single input + generate button + dropdown button -->
+                    <div class="barcode-combo-wrap">
+                        <input type="text" id="barcode-input"
+                            placeholder="e.g. PLT-20240601-007"
+                            class="text-field barcode-combo-input"
+                            autocomplete="off">
+
+                        <!-- Generate button -->
+                        <button type="button" class="barcode-gen-btn" id="barcode-gen-btn"
+                            title="Auto-generate barcode" onclick="generateBarcode()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                                 stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
                             </svg>
                         </button>
+
+                        <!-- Dropdown arrow button -->
+                        <button type="button" class="barcode-dropdown-btn" id="barcode-dropdown-btn"
+                            title="Select existing barcode" onclick="toggleBarcodeDropdown()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </button>
+
+                        <!-- Custom dropdown list -->
+                        <div class="barcode-dropdown-list" id="barcode-dropdown-list" style="display:none;">
+                            <div class="barcode-dropdown-loading" id="barcode-dropdown-loading">Loading…</div>
+                        </div>
                     </div>
+                    <p class="field-select-error" id="barcode-select-error" style="display:none;">Could not load barcodes.</p>
                 </div>
             </div>
 
@@ -394,10 +502,6 @@
                     <div class="result-row">
                         <span class="result-label">Severity</span>
                         <span class="result-value" id="result-severity">—</span>
-                    </div>
-                    <div class="result-row" id="recovery-status-row">
-                        <span class="result-label">Recovery Status</span>
-                        <span class="result-value" id="result-recovery-status">—</span>
                     </div>
                     <div class="result-row" id="recovery-row">
                         <span class="result-label">Recovery</span>
