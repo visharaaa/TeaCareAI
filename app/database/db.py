@@ -181,7 +181,13 @@ class Database:
     # returns user dict if email exists, None otherwise
     def check_email_exists(self, email):
         query = "SELECT user_id FROM users WHERE email = %s"
-        return self.fetch_data_handler(query, (email,), fetch_all=False)
+        result=self.fetch_data_handler(query, (email,), fetch_all=False)
+        return result['user_id']
+
+    def get_user_id_by_user_code(self, user_code):
+        query = "SELECT user_id FROM users WHERE user_code = %s"
+        result=self.fetch_data_handler(query, (user_code,), fetch_all=False)
+        return result['user_id']
 
     #-----------------------------------------------------------------------------
     # user refresh tokens table operations

@@ -17,7 +17,7 @@ def about():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session:
+    if 'user_code' in session:
         return redirect(url_for('home'))
 
     if request.method == 'POST':
@@ -73,10 +73,10 @@ def add_field():
             return render_template('add_field.html', error='Latitude, longitude, elevation and age must be numbers.')
 
 
-        user_id   = session["user_id"]
+        user_code   = session["user_code"]
 
         # add field to the database
-        result = add_field_to_db(user_id,field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age)
+        result = add_field_to_db(user_code,field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age)
 
         if not result:
             return render_template('add_field.html', error='Could not save field. It may already exist.')
@@ -92,7 +92,7 @@ def logout():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if 'user_id' in session:
+    if 'user_code' in session:
         return redirect(url_for('home'))
 
     #validating the user inputs
@@ -128,6 +128,7 @@ def signup():
 @app.route('/analayze', methods=['GET', 'POST'])
 @auth.login_required
 def analayze():
+    print(session)
     if request.method == 'POST':
         if 'image' not in request.files:
             return jsonify({'error': 'No image uploaded'}), 400
@@ -143,24 +144,25 @@ def analayze():
         if image_file.filename == '':
             return jsonify({'error': 'No file selected for uploading'}), 400
 
-        user_id = session["user_id"]
+        user_code = session["user_code"]
 
         #getting the result from tea_disease_identifier,treatment_recommendations and recovery_tracker
-        results = predict(user_id,image_file,field_id=field_id,chat_code=barcode, latitude=latitude, longitude=longitude)
+        results = predict(user_code,image_file,field_id=field_id,chat_code=barcode, latitude=latitude, longitude=longitude)
         return jsonify(results), 200
 
+    print(session['user_code'])
     # load the chat history data
-    data = load_user_chat(session['user_id'])
+    data = load_user_chat(session['user_code'])
 
     return render_template('analayze.html', records=data)
 
 @app.route('/api/fields', methods=['GET'])
 @auth.login_required
 def get_fields():
-    user_id = session['user_id']
-    print(user_id)
+    user_code = session['user_code']
+    print(user_code)
     #get the users' field_id and field_name
-    fields = get_users_field_details(user_id)
+    fields = get_users_field_details(user_code)
     print(fields)
     return jsonify(fields or [])
 

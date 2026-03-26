@@ -36,7 +36,6 @@ def login_user(email: str, password: str, device_info: str = None, latitude=None
 
     # Store user data in session
     session.permanent = True
-    session["user_id"]   = user_data["user_id"]
     session["user_code"] = user_data["user_code"]
     session["user_name"] = user_data["user_name"]
     session["email"]     = user_data["email"]
@@ -70,7 +69,6 @@ def get_current_user():
     if "user_id" not in session:
         return None
     return {
-        "user_id":   session["user_id"],
         "user_code": session["user_code"],
         "user_name": session["user_name"],
         "email":     session["email"],
@@ -83,7 +81,7 @@ def get_current_user():
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if "user_id" not in session:
+        if "user_code" not in session:
             if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify({"error": "Authentication required."}), 401
             return redirect(url_for("login"))

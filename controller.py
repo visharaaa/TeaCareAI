@@ -104,7 +104,8 @@ def recovery_tracker_worker():
 # This is the main function that the Flask route will call when it needs a prediction. 
 # It starts the background workers and processes the image through the queues.
 # returns error message if any step fails, otherwise returns the prediction result
-def predict(user_id,img,field_id, chat_code:str,latitude, longitude,elevation=None):
+def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=None):
+    user_id=db.get_user_id_by_user_code(user_code)
     if not os.path.exists(Config.UPLOAD_FOLDER):
         os.makedirs(Config.UPLOAD_FOLDER)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -271,7 +272,9 @@ def register_user(user_name, email, password, user_type):
 # This function will be called to load the user's chat history
 # It checks if the email exists, verifies the password
 # returns the user_id if successful
-def load_user_chat(user_id):
+def load_user_chat(user_code):
+    user_id=db.get_user_id_by_user_code(user_code)
+    print(user_id)
     records = db.get_user_chat_history_by_user_id(user_id)
     data = []
     for record in records:
@@ -310,7 +313,10 @@ def get_session_lifetime():
 # params => user_id, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age
 # This function will be called when the user adds a new field. 
 # It saves the field information to the database.
-def add_field_to_db(user_id, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age):
+def add_field_to_db(user_code, field_name,field_latitude, field_longitude,field_elevation, tea_variety, plant_age):
+    # get user_id using user_id
+    user_id = db.get_user_id_by_user_code(user_code)
+
     # add field to the database
     result = db.add_field(
         user_id=user_id,
@@ -326,7 +332,8 @@ def add_field_to_db(user_id, field_name,field_latitude, field_longitude,field_el
 # params => user_id
 # This function will be called to get the field details for a specific user.
 # returns a list of fields associated with the user_id
-def get_users_field_details(user_id):
+def get_users_field_details(user_code):
+    user_id = db.get_user_id_by_user_code(user_code)
     # Get the field details for the user from the database
     result=db.get_field_names_by_user_id(user_id)
     return result
@@ -354,8 +361,10 @@ def standardize_disease_name(disease_name):
 # This function will be called to save the detection and treatment data to the database after each detection.
 # returns a tuple of (success: bool, message: str)
 #scan_id and chat code are the same
-def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
+def save_data(user_code,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
               healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
+
+    user_id = db.get_user_id_by_user_code(user_code)
 
     # Check if the chat_code already exists
     result=db.get_scan_chat_history_by_chat_code(chat_code)
