@@ -5,7 +5,6 @@ const confidenceText   = document.getElementById('confidence-text');
 const treatmentText    = document.getElementById('treatment-text');
 const resultCard       = document.getElementById('result-card');
 const resultBadge      = document.getElementById('result-badge');
-const resultLocation   = document.getElementById('result-location');
 const resultBarcode    = document.getElementById('result-barcode');
 const resultField      = document.getElementById('result-field');
 
@@ -437,7 +436,6 @@ scanButton.addEventListener('click', async () => {
             renderTreatment(treatmentText, result.treatment);
             resultBadge.textContent    = result.status;
             resultField.textContent    = fieldName;
-            resultLocation.textContent = loc;
             resultBarcode.textContent  = barcode;
 
             // ── Severity ──
@@ -540,7 +538,6 @@ function renderHistory() {
             renderTreatment(treatmentText, entry.treatment);
             resultBadge.textContent    = entry.status;
             resultField.textContent    = entry.field    || '—';
-            resultLocation.textContent = entry.location || '—';
             resultBarcode.textContent  = entry.barcode  || '—';
 
             // ── Severity ──

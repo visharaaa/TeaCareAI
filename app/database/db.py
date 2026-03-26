@@ -182,7 +182,7 @@ class Database:
     def check_email_exists(self, email):
         query = "SELECT user_id FROM users WHERE email = %s"
         result=self.fetch_data_handler(query, (email,), fetch_all=False)
-        return result['user_id']
+        return result
 
     def get_user_id_by_user_code(self, user_code):
         query = "SELECT user_id FROM users WHERE user_code = %s"
