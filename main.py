@@ -1,7 +1,10 @@
+from pdb import main
+import sys
+
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import auth
 from controller import register_user,load_user_chat,predict,get_secret_key,get_session_lifetime,add_field_to_db,get_users_field_details,generate_new_chat_code,load_chat_code_drop_down
-
+from check_constraints import check_prerequisites
 app = Flask(__name__)
 app.secret_key = get_secret_key()
 app.permanent_session_lifetime = get_session_lifetime()
@@ -180,4 +183,8 @@ def get_chat_codes():
     return jsonify(codes or [])
 
 if __name__ == '__main__':
+    try:
+        check_prerequisites()
+    except KeyError:
+        sys.exit(1)
     app.run(debug=True, host='0.0.0.0')
