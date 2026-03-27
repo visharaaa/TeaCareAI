@@ -2,11 +2,9 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-
 import bcrypt
 from flask import session, redirect, url_for, request, jsonify
 from controller import db
-
 
 # params=> raw_token
 # this function returns the hash of the token
@@ -18,13 +16,12 @@ def hash_token(raw_token: str) -> str:
 def generate_refresh_token() -> str:
     return secrets.token_urlsafe(64)
 
-
 # params=> email, password, device_info, latitude, longitude
 # this function logs in the user and creates a new session
 # returns user data and error message if any
 # error message is None if no error
 def login_user(email: str, password: str, device_info: str = None, latitude=None, longitude=None):
-    user_data = db.get_use_data_by_email(email)
+    user_data = db.get_user_data_by_email(email)
     if not user_data:
         return None, "Invalid email or password."
 
@@ -39,7 +36,6 @@ def login_user(email: str, password: str, device_info: str = None, latitude=None
 
     # Store user data in session
     session.permanent = True
-    session["user_id"]   = user_data["user_id"]
     session["user_code"] = user_data["user_code"]
     session["user_name"] = user_data["user_name"]
     session["email"]     = user_data["email"]
@@ -73,7 +69,6 @@ def get_current_user():
     if "user_id" not in session:
         return None
     return {
-        "user_id":   session["user_id"],
         "user_code": session["user_code"],
         "user_name": session["user_name"],
         "email":     session["email"],
@@ -86,7 +81,7 @@ def get_current_user():
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if "user_id" not in session:
+        if "user_code" not in session:
             if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify({"error": "Authentication required."}), 401
             return redirect(url_for("login"))

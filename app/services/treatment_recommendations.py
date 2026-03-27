@@ -158,7 +158,7 @@ class TeaDiseaseRAG:
 
         Give a friendly, simple response in English.
         - Explain symptoms in easy words in point form
-        - List and explain treatments in bullet points
+        - List and explain treatments in bullet points and give respective percentages
         - Add 2-3 practical tips for local farmers
         - Keep short (150-250 words)
         - End with safety note
@@ -183,10 +183,6 @@ class TeaDiseaseRAG:
             "confidence": confidence_percent
         }
 
-    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
-        respond=self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
-        response=(respond.get("llm_response"),respond.get("confidence"))
-        return response
 
     def log_request(self, query, severity, location, disease, confidence, response):
         file_exists = os.path.isfile("rag_log.csv")
@@ -197,20 +193,27 @@ class TeaDiseaseRAG:
             writer.writerow([datetime.now(), query, severity, location, disease, confidence, response])
 
 
-if __name__ == "__main__":
-    # System initialization
-    rag_system = TeaDiseaseRAG(
-        excel_path = "../data_folder/treatments_data_v2.xlsx",
-        db_path = "chroma_DB"
-    )
+    def get_treatment(self, disease_name, severity_level, location = "Sri Lanka"):
+        respond = self.get_recommendation(disease_name, severity_level, location = "Sri Lanka")
+        response = (respond.get("llm_response"), respond.get("confidence"))
+        return response
 
-    # Run example query
-    result = rag_system.get_recommendation(
-        disease_name = "Blister Blight",
-        severity_level = "medium",
-        location = "Hatton"
-    )
 
-    print("\nLLM response:")
-    print(result.get('llm_response', result.get('message')))
+# if __name__ == "__main__":
+#     # System initialization
+#     rag_system = TeaDiseaseRAG(
+#         excel_path = "../data_folder/treatments_data_v2.xlsx",
+#         db_path = "chroma_DB"
+#     )
+#
+#     # Run example query
+#     result = rag_system.get_recommendation(
+#         disease_name = "Blister Blight",
+#         severity_level = "high",
+#         location = "Hatton"
+#     )
+#
+#     print("\nLLM response:")
+#     print(result.get('llm_response', result.get('message')))
+
 

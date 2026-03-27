@@ -5,7 +5,6 @@ const confidenceText   = document.getElementById('confidence-text');
 const treatmentText    = document.getElementById('treatment-text');
 const resultCard       = document.getElementById('result-card');
 const resultBadge      = document.getElementById('result-badge');
-const resultLocation   = document.getElementById('result-location');
 const resultBarcode    = document.getElementById('result-barcode');
 const resultField      = document.getElementById('result-field');
 
@@ -58,6 +57,8 @@ barcodeInput.addEventListener('input', checkScanReady);
     const arrow    = document.getElementById('field-select-arrow');
     const errorMsg = document.getElementById('field-select-error');
 
+    if (!spinner || !arrow || !errorMsg) return;
+
     spinner.style.display = 'block';
 
     try {
@@ -84,7 +85,7 @@ barcodeInput.addEventListener('input', checkScanReady);
 
         spinner.style.display = 'none';
         arrow.style.display   = 'block';
-        checkScanReady(); // re-check after fields load
+        checkScanReady();
 
     } catch (err) {
         console.error('Failed to load fields:', err);
@@ -94,6 +95,85 @@ barcodeInput.addEventListener('input', checkScanReady);
         errorMsg.style.display = 'block';
     }
 })();
+
+
+// ══════════════════════════════════════════
+// ── BARCODE DROPDOWN — toggle custom list
+// ══════════════════════════════════════════
+
+let barcodeCodes    = [];
+let barcodesLoaded  = false;
+
+async function fetchBarcodeCodes() {
+    if (barcodesLoaded) return;
+    const loadingEl = document.getElementById('barcode-dropdown-loading');
+    try {
+        const res   = await fetch('/api/chat-codes');
+        if (!res.ok) throw new Error('Request failed');
+        barcodeCodes   = await res.json();
+        barcodesLoaded = true;
+        renderBarcodeList(barcodeCodes);
+    } catch (err) {
+        console.error('Failed to load barcodes:', err);
+        if (loadingEl) loadingEl.textContent = 'Could not load barcodes.';
+    }
+}
+
+function renderBarcodeList(codes) {
+    const list = document.getElementById('barcode-dropdown-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!codes || codes.length === 0) {
+        list.innerHTML = '<div class="barcode-dropdown-loading">No existing barcodes.</div>';
+        return;
+    }
+
+    codes.forEach(c => {
+        const item       = document.createElement('div');
+        item.className   = 'barcode-dropdown-item';
+        item.textContent = c.chat_code;
+        item.addEventListener('click', () => {
+            barcodeInput.value = c.chat_code;
+            closeBarcodeDropdown();
+            checkScanReady();
+        });
+        list.appendChild(item);
+    });
+}
+
+function toggleBarcodeDropdown() {
+    const list = document.getElementById('barcode-dropdown-list');
+    const btn  = document.getElementById('barcode-dropdown-btn');
+    if (!list) return;
+
+    const isOpen = list.style.display !== 'none';
+    if (isOpen) {
+        closeBarcodeDropdown();
+    } else {
+        list.style.display = 'block';
+        btn.classList.add('open');
+        fetchBarcodeCodes();
+        // close when clicking outside
+        setTimeout(() => document.addEventListener('click', outsideClickHandler), 0);
+    }
+}
+
+function closeBarcodeDropdown() {
+    const list = document.getElementById('barcode-dropdown-list');
+    const btn  = document.getElementById('barcode-dropdown-btn');
+    if (list) list.style.display = 'none';
+    if (btn)  btn.classList.remove('open');
+    document.removeEventListener('click', outsideClickHandler);
+}
+
+function outsideClickHandler(e) {
+    const wrap = document.querySelector('.barcode-combo-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        closeBarcodeDropdown();
+    }
+}
+
 
 
 // ══════════════════════════════════════════
@@ -356,7 +436,6 @@ scanButton.addEventListener('click', async () => {
             renderTreatment(treatmentText, result.treatment);
             resultBadge.textContent    = result.status;
             resultField.textContent    = fieldName;
-            resultLocation.textContent = loc;
             resultBarcode.textContent  = barcode;
 
             // ── Severity ──
@@ -459,7 +538,6 @@ function renderHistory() {
             renderTreatment(treatmentText, entry.treatment);
             resultBadge.textContent    = entry.status;
             resultField.textContent    = entry.field    || '—';
-            resultLocation.textContent = entry.location || '—';
             resultBarcode.textContent  = entry.barcode  || '—';
 
             // ── Severity ──
@@ -507,9 +585,16 @@ const historyViewImg   = document.getElementById('history-view-img');
 const historyViewNoImg = document.getElementById('history-view-no-img');
 const newScanBtn       = document.getElementById('new-scan-btn');
 
+const fieldsRowEl       = document.querySelector('.fields-row');
+const scanBtnEl         = document.getElementById('scan-button');
+const noFieldsWarningEl = document.getElementById('no-fields-warning');
+
 function enterHistoryView(imageUrl) {
     dropZoneEl.style.display    = 'none';
     historyViewer.style.display = 'block';
+    fieldsRowEl.style.display   = 'none';
+    scanBtnEl.style.display     = 'none';
+    if (noFieldsWarningEl) noFieldsWarningEl.style.display = 'none';
     if (imageUrl) {
         historyViewImg.src             = imageUrl;
         historyViewImg.style.display   = 'block';
@@ -523,6 +608,8 @@ function enterHistoryView(imageUrl) {
 function exitHistoryView() {
     historyViewer.style.display = 'none';
     dropZoneEl.style.display    = 'block';
+    fieldsRowEl.style.display   = '';
+    scanBtnEl.style.display     = '';
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     resultCard.style.display = 'none';
 }
@@ -542,14 +629,17 @@ clearHistoryBtn.addEventListener('click', () => {
 function loadHistoryFromDB(records) {
     if (!Array.isArray(records) || records.length === 0) { renderHistory(); return; }
     analysisHistory = records.map(record => ({
-        status:       record.disease_name || 'Unknown',
-        confidence:   record.confidence   || '--%',
-        treatment:    record.treatment    || 'No treatment data available.',
-        field:        record.field_name   || '—',
-        location:     record.longitude    || '—',
-        barcode:      record.barcode      || '—',
-        imageDataUrl: record.imageDataUrl || null,
-        date:         record.date         || '—'
+        status:              record.disease_name      || 'Unknown',
+        confidence:          record.confidence        || '--%',
+        treatment:           record.treatment         || 'No treatment data available.',
+        field:               record.field_name        || '—',
+        location:            record.location          || '—',
+        barcode:             record.barcode           || '—',
+        imageDataUrl:        record.imageDataUrl      || null,
+        date:                record.date              || '—',
+        severity_level:      record.severity_level    || '—',
+        recovery_percentage: record.recovery_percentage != null ? record.recovery_percentage : null,
+        detection_status:    record.detection_status  || 'new',
     }));
     renderHistory();
 }

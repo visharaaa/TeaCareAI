@@ -1,11 +1,6 @@
-.idea/
-data/
-.env
-__pycache__/
-static/uploaded_leaves/
-app/database/__pycache__/
-app/database/RAG_kb/
-app/services/__pycache__/
-test_db.ipynb
-test_NN.ipynb
 .vscode/
+.idea/
+__pycache__/
+.env
+static/uploaded_leaves/
+data/rag_kb/

@@ -1,51 +1,114 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import joblib
-import tensorflow as tf
+from tensorflow.keras.models import load_model
+
+from config import Config
 
 
-class LeafEvaluator:
-    def __init__(self, model_path='tea_health_model.h5', scaler_path='scaler.pkl', feature_path='feature_columns.pkl'):
-        self.model = tf.keras.models.load_model(model_path, compile=False)
-        self.scaler = joblib.load(scaler_path)
-        self.feature_columns = joblib.load(feature_path)
+class TreatmentProgressTracker:
 
-    def predict_improvement(self, leaf_input: dict):
-        """
-        leaf_input: dictionary with keys as feature names, e.g.,
-        {
-            'Total_Leaf_Area_mm2': 1200,
-            'Affected_Area_Pre': 350,
-            'Humidity_Pct': 78,
-            'Temp_Celsius': 26,
-            'Disease_Type_Blister Blight': 1,
-            'Disease_Type_Brown Blight': 0,
-            ...
-        }
-        """
-        # Convert dict to DataFrame with correct column order
-        df = pd.DataFrame([leaf_input], columns=self.feature_columns)
-        X_scaled = self.scaler.transform(df)
+    def __init__(self,model_path='recovery_model.h5', scaler_path='scaler.pkl', feature_cols_path='feature_columns.pkl'):
+        self.model        = load_model(model_path, compile=False)
+        self.scaler       = joblib.load(scaler_path)
+        self.feature_cols = joblib.load(feature_cols_path)
 
-        pred = self.model.predict(X_scaled, verbose=0)[0][0]
-        return round(pred, 2)
+    # Private helper method (underscore means it's for internal use only)
+    # Take the six input features and return a single recovery score
+    # This is called twice inside check_progress(): once for day 0 and one for the current state
+    def _get_score(self, disease, days_after_treatment, initial_affected_area_pct,
+                   affected_area_pct, color_deviation, humidity):
 
-"""if __name__ == "__main__":
-        evaluator = LeafEvaluator()
-
-        leaf_input = {
-            'Total_Leaf_Area_mm2': 1200,
-            'Affected_Area_Pre': 400,
-            'Affected_Area_Post': 120,
-            'Humidity_Pct': 75,
-            'Temp_Celsius': 27,
-            'Disease_Type_Blister Blight': 1,
-            'Disease_Type_Brown Blight': 0,
-            'Disease_Type_Grey Blight': 0,
-            'Disease_Type_Red Rust': 0,
-            'Disease_Type_Red Spider': 0
+        input_dict = {
+            'days_after_treatment':      days_after_treatment,
+            'initial_affected_area_pct': initial_affected_area_pct,
+            'affected_area_pct':         affected_area_pct,
+            'color_deviation':           color_deviation,
+            'humidity':                  humidity,
+            'disease_blister_blight':    0,
+            'disease_brown_blight':      0,
+            'disease_grey_blight':       0,
+            'disease_helopeltis':        0,
+            'disease_red_rust':          0,
         }
 
-        prediction = evaluator.predict_improvement(leaf_input)
-        print(f"Predicted Health Improvement: {prediction:.2f}%")
-"""
+        # One-hot encoding the diseases
+        input_dict[f'disease_{disease}'] = 1
+
+        # Converts dict. into a single row dataframe
+        input_df     = pd.DataFrame([input_dict])[self.feature_cols]
+        input_scaled = self.scaler.transform(input_df)
+
+        # Making the prediction
+        score        = self.model.predict(input_scaled, verbose=0)[0][0] * 100
+
+        return round(float(np.clip(score, 0, 100)), 1)
+
+    # Main public method the system calls
+    def check_progress(self, disease, initial_affected_area_pct, days_after_treatment,
+                       affected_area_pct, color_deviation, humidity):
+
+        # Score at day 0: how the leaf looked when treatment was first applied
+        initial_score = self._get_score(
+            disease, 0, initial_affected_area_pct,
+            initial_affected_area_pct, color_deviation, humidity
+        )
+
+        # Score now: how the leaf looks today
+        current_score = self._get_score(
+            disease, days_after_treatment, initial_affected_area_pct,
+            affected_area_pct, color_deviation, humidity
+        )
+
+        # Treatment effectiveness = how much has changed since day 0
+        # Positive change means it has improved, negative means otherwise
+        #The ±2 threshold filters out tiny fluctuations that are within the model's margin of error before labelling something as improving or deteriorating.
+        change = current_score - initial_score
+
+        if change > 2:
+            formated_output = f"Improving (+{change:.1f}%)"
+            status="improving"
+        elif change < -2:
+            formated_output = f"Deteriorating ({change:.1f}%)"
+            status="deteriorating"
+        else:
+            formated_output = "Stable (0.0%)"
+            status="stable"
+
+        # Print progress report
+        # print("\n--- Treatment Progress Report ---")
+        # print(f"  Disease             : {disease.replace('_', ' ').title()}")
+        # print(f"  Days Since Treatment: {days_after_treatment}")
+        # print(f"  Score at Day 0      : {initial_score}%")
+        # print(f"  Current Score       : {current_score}%")
+        # print(f"  Treatment Effect    : {formated_output}")
+
+        result={
+            'current_score' : current_score,
+            'change' : change,
+            'status' : status,
+            'formated_output' : formated_output
+        }
+
+        # Returns the three values
+        return result
+
+#
+# # Example
+#
+# if __name__ == "__main__":
+#
+#     tracker = TreatmentProgressTracker(
+#         model_path=Config.NN_MODEL_PATH,
+#         scaler_path=Config.NN_SCALER_PATH,
+#         feature_cols_path=Config.NN_FEATURE_COLUMNS_PATH
+#     )
+#
+#     print(tracker.check_progress(
+#         disease='brown_blight',
+#         initial_affected_area_pct=40.0,   # from database back when the leaf was first scanned
+#         days_after_treatment=14,           # get from user
+#         affected_area_pct=60.0,            # from current uploaded image
+#         color_deviation=0.25,              # from current uploaded image
+#         humidity=70.0                      # current reading
+#     ))

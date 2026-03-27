@@ -1,5 +1,7 @@
+from datetime import datetime
 import psycopg2
 from psycopg2.extras import Json
+from tensorboard.compat.tensorflow_stub.dtypes import double
 from config import Config
 import json
 
@@ -170,7 +172,7 @@ class Database:
     # params=> email
     # this function returns user dict (with password hash) for login validation
     # returns user dict (with password hash) for login validation
-    def get_use_data_by_email(self, email):
+    def get_user_data_by_email(self, email):
         query = "SELECT user_id, user_code, user_name, email, password, user_type FROM users WHERE email = %s"
         return self.fetch_data_handler(query, (email,), fetch_all=False)
 
@@ -179,10 +181,27 @@ class Database:
     # returns user dict if email exists, None otherwise
     def check_email_exists(self, email):
         query = "SELECT user_id FROM users WHERE email = %s"
-        return self.fetch_data_handler(query, (email,), fetch_all=False)
+        result=self.fetch_data_handler(query, (email,), fetch_all=False)
+        return result
+
+    def get_user_id_by_user_code(self, user_code):
+        query = "SELECT user_id FROM users WHERE user_code = %s"
+        result=self.fetch_data_handler(query, (user_code,), fetch_all=False)
+        return result['user_id']
+
+    def get_user_chat_code_by_user_id(self, user_id):
+        query = """
+                select chat_code
+                from user_scan_history as ush inner join scan_history_chat as shc on ush.scan_id = shc.scan_id
+                where user_id=%s
+                order by chat_created_timestamp desc;
+                """
+        return self.fetch_data_handler(query, (user_id,), fetch_all=True)
 
 
+    #-----------------------------------------------------------------------------
     # user refresh tokens table operations
+    #-----------------------------------------------------------------------------
 
     # params => user_id, token_hash, device_info, latitude, longitude, expires_at
     # this function stores a new hashed refresh token for session management
@@ -255,6 +274,12 @@ class Database:
         """
         return self.input_error_handler(query, (field_name, field_latitude, field_longitude, field_elevation, tea_variety, plant_age_in_years, field_id))
 
+    #params => field_id
+    #this function get the field's location data using field_id
+    #retun field_id, latitude, longitude, elevation as dict, or None on failure
+    def get_field_location_by_field_id(self, field_id):
+        query = "SELECT field_id,field_latitude as latitude,field_longitude as longitude,field_elevation as elevation FROM field WHERE field_id = %s;"
+        return self.fetch_data_handler(query, (field_id,), fetch_all=False)
 
     #-----------------------------------------------------------------------------
     # scan history chat table operations
@@ -304,6 +329,20 @@ class Database:
         query = "DELETE FROM scan_history_chat WHERE chat_code = %s"
         return self.input_error_handler(query, (chat_code,))
 
+    # params => None
+    # this function returns all chat_codes in the scan_history_chat table
+    # returns list of chat_codes as dicts, or empty list on failure
+    def get_chat_codes(self):
+        query = "select chat_code from scan_history_chat order by chat_code ;"
+        return self.fetch_data_handler(query)
+
+    # params => chat_code
+    # this function used to get the location data of a scan chat history by chat_code
+    # returns chat_code, latitude, longitude, elevation as dict, or None on failure
+    def get_location_by_chat_code(self, chat_code):
+        query="select chat_code,latitude as latitude,longitude as longitude,elevation as elevation  FROM scan_history_chat WHERE chat_code = %s"
+        return self.fetch_data_handler(query, (chat_code,), fetch_all=False)
+
     #-----------------------------------------------------------------------------
     # user scan history table operations
     #-----------------------------------------------------------------------------
@@ -324,11 +363,16 @@ class Database:
                 dis.disease_name,
                 d.confidence_score,
                 tr.generated_advice        AS treatment,
-                shc.longitude              AS location,
-                d.detection_code,
+                field_name                 as field_name,
+                shc.longitude              AS longitude,
+                chat_code                  as barcode,
                 d.image_name               AS imageDataUrl,
-                shc.chat_created_timestamp AS date
-            FROM user_scan_history         AS ush
+                shc.chat_created_timestamp AS date,
+                severity_level,
+                recovery_percentage        as recovery_percentage,
+                status                     as detection_status
+            FROM field as f
+                INNER JOIN user_scan_history      AS ush on f.field_id = ush.field_id
                 INNER JOIN scan_history_chat      AS shc ON ush.scan_id          = shc.scan_id
                 INNER JOIN detection              AS d   ON shc.scan_id          = d.scan_id
                 INNER JOIN disease                AS dis ON d.disease_id         = dis.disease_id
@@ -352,12 +396,13 @@ class Database:
         return result['disease_id'] if result else None
 
 
-
+    #-----------------------------------------------------------------------------
     # treatment recommendation table operations
+    #-----------------------------------------------------------------------------
 
-    # params => recommendation_id, recommendation_code, generated_advice,
-    #           RAG_confidence_score (0-100), model_version
-    # Inserts a new AI-generated treatment recommendation
+    # params => recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version
+    # this function inserts a new treatment recommendation
+    # returns True on success, False on failure
     def add_recommended_treatment(self, recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version=Config.MODEL_VERSION):
         query = """
             INSERT INTO treatment_recommendation(recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version)
@@ -366,8 +411,9 @@ class Database:
         return self.input_error_handler(query, (recommendation_id, recommendation_code, generated_advice, RAG_confidence_score, model_version))
 
 
-
+    #-----------------------------------------------------------------------------
     # detection table operations
+    #-----------------------------------------------------------------------------
 
     # params => detection_id, detection_code (20 chars), scan_id, disease_id,
     #           confidence_score (0-100), bounding_box (dict or JSON string),
@@ -375,46 +421,47 @@ class Database:
     #           healthy_leaf_area (0-100), affected_area (0-100),
     #           image_name, recovery_percentage (0-100), status
     # Validates all inputs then inserts a detection record
+    # returns True on success, dict with 'error' key on validation failure, False on database failure
     def add_detection(self, detection_id:int, detection_code:str, scan_id:int, disease_id:int, confidence_score:float,
                       bounding_box:dict, severity_level:str, lesion_count:int, healthy_leaf_area:float,
-                      affected_area:float, image_name:str, recovery_percentage=0.00, status='new'):
+                      affected_area:float, image_name:str,recovery_percentage=0.00, status='new'):
 
         detection_id   = int(detection_id)
         detection_code = str(detection_code)
         if len(detection_code) != 20:
-            return {'error': 'detection_code must be exactly 20 characters'}
+            raise ValueError ('detection_code must be exactly 20 characters long')
 
         scan_id    = int(scan_id)
         disease_id = int(disease_id)
 
         confidence_score = round(float(confidence_score), 2)
         if not (0 <= confidence_score <= 100):
-            return {'error': 'confidence_score must be between 0 and 100'}
+            raise ValueError ('confidence_score must be between 0 and 100')
 
         bounding_box = Json(json.loads(bounding_box)) if isinstance(bounding_box, str) else Json(bounding_box)
 
         severity_level = str(severity_level).lower()
         if severity_level not in ('low', 'medium', 'high'):
-            return {'error': 'severity_level must be one of: low, medium, high'}
+            raise ValueError ('severity_level must be one of: low, medium, high')
 
         lesion_count      = int(lesion_count)
 
         healthy_leaf_area = round(float(healthy_leaf_area), 2)
         if not (0 <= healthy_leaf_area):
-            return {'error': 'healthy_leaf_area must be greater than 0'}
+            raise ValueError ('healthy_leaf_area must be greater than 0')
 
         affected_area = round(float(affected_area), 2)
         if not (0 <= affected_area):
-            return {'error': 'affected_area must be between greater than 0'}
+            raise ValueError ('affected_area must be between greater than 0')
 
         image_name = str(image_name)
         recovery_percentage = round(float(recovery_percentage), 2)
-        if not (0 <= recovery_percentage <= 100):
-            return {'error': 'recovery_percentage must be between 0 and 100'}
+        if not (abs(recovery_percentage)<=100):
+            raise ValueError ('recovery_percentage must be between -100 and 100')
 
         status = str(status)
-        if status not in ('new', 'under_treatment', 'recovered', 'escalated'):
-            return {'error': 'status must be one of: new, under_treatment, recovered, escalated'}
+        if status not in ('new','improving','stable','deteriorating'):
+            raise ValueError ('status must be one of: new, under_treatment, recovered, escalated')
 
         query = """
             INSERT INTO detection(
@@ -435,16 +482,30 @@ class Database:
         query = "DELETE FROM detection WHERE detection_id = %s"
         return self.input_error_handler(query, (detection_id,))
 
+    def detection_data_by_chat_code(self, chat_code):
+        query = """
+                select *
+                from scan_history_chat as shc inner join detection as d on shc.scan_id = d.scan_id
+                where chat_code= %s
+                order by shc.chat_created_timestamp desc
+                LIMIT 1;
+        """
+        return self.fetch_data_handler(query, (chat_code,))
 
-
+    #-----------------------------------------------------------------------------
     # applied treatment table operations
+    #-----------------------------------------------------------------------------
 
     # params => detection_id, recommendation_id
     # Links a detection to its treatment recommendation
+    # returns True on success, False on failure
     def add_applied_treatment(self, detection_id, recommendation_id):
         query = "INSERT INTO applied_treatment(detection_id, recommendation_id) VALUES (%s, %s)"
         return self.input_error_handler(query, (detection_id, recommendation_id))
 
+    # params => detection_id
+    # this function removes all applied treatment records linked to a detection_id
+    # returns True on success, False on failure
     def remove_applied_treatment(self,detection_id):
         query = "DELETE FROM applied_treatment WHERE detection_id = %s"
         return self.input_error_handler(query, (detection_id,))

@@ -1,0 +1,51 @@
+version: '3.9'
+
+services:
+
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      # persist uploaded scan images between restarts
+      - ./static/uploaded_leaves:/app/static/uploaded_leaves
+      # mount model weights (large files — keep outside image)
+      - ./app/models:/app/app/models
+      # mount RAG vector DB (built once, reused)
+      - ./data/rag_kb:/app/data/rag_kb
+    depends_on:
+      db:
+        condition: service_healthy
+    # GPU passthrough
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -3,7 +3,7 @@
 {% block title %}Analyze{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{{url_for('static',filename='css/analyze.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analyze.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/rag-treatment.css') }}">
 <style>
 /* ── Field dropdown ── */
@@ -70,290 +70,456 @@
     display: none;
 }
 
-/* ── Severity level colors ── */
-.severity-low    { color: #16a34a; font-weight: 700; }
-.severity-medium { color: #d97706; font-weight: 700; }
-.severity-high   { color: #dc2626; font-weight: 700; }
+        /* ── Severity level colors ── */
+        .severity-low    { color: #16a34a; font-weight: 700; }
+        .severity-medium { color: #d97706; font-weight: 700; }
+        .severity-high   { color: #dc2626; font-weight: 700; }
 
-/* ── Severity badge ── */
-.severity-badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 99px;
-    font-size: 12px;
-    font-weight: 700;
+/* ── Barcode combo — single input + gen + dropdown ── */
+.barcode-combo-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
 }
-.severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-.severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
-.severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-</style>
+
+.barcode-combo-input {
+    flex: 1;
+    border-radius: var(--radius-md) 0 0 var(--radius-md) !important;
+    border-right: none !important;
+    padding-right: 14px !important;
+}
+
+.barcode-combo-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(21,127,60,0.1);
+    z-index: 1;
+}
+
+.barcode-gen-btn {
+    width: 38px;
+    height: 42px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.barcode-gen-btn:hover { background: var(--primary); border-color: var(--primary); }
+.barcode-gen-btn:hover svg { stroke: #fff; }
+.barcode-gen-btn.loading svg { animation: barcode-spin 0.7s linear infinite; }
+@keyframes barcode-spin { to { transform: rotate(360deg); } }
+
+.barcode-dropdown-btn {
+    width: 36px;
+    height: 42px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-left: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+    color: var(--text-muted);
+}
+
+.barcode-dropdown-btn:hover { background: var(--primary-tint); color: var(--primary); }
+.barcode-dropdown-btn.open { background: var(--primary); color: #fff; border-color: var(--primary); }
+.barcode-dropdown-btn.open svg { stroke: #fff; }
+
+/* Custom dropdown list */
+.barcode-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1.5px solid var(--primary-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--card-shadow-lg);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.barcode-dropdown-loading {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.barcode-dropdown-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-heading);
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--primary-border);
+}
+
+.barcode-dropdown-item:last-child { border-bottom: none; }
+.barcode-dropdown-item:hover { background: var(--primary-tint); color: var(--primary); }
+
+/* ── Barcode input with generate button ── */
+.barcode-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.barcode-input-wrap .text-field {
+    padding-right: 44px;
+}
+
+.barcode-gen-btn {
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.barcode-gen-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.barcode-gen-btn:hover svg {
+    stroke: #fff;
+}
+
+.barcode-gen-btn:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+.barcode-gen-btn.loading svg {
+    animation: barcode-spin 0.7s linear infinite;
+}
+
+@keyframes barcode-spin { to { transform: rotate(360deg); } }
+
+        /* ── Severity badge ── */
+        .severity-badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+        .severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+        .severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+        .severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+    </style>
 {% endblock %}
 
 {% block content %}
-
-<div class="analyze-wrapper">
-
-    <!-- LEFT: History Panel -->
-    <aside class="history-panel">
-        <div class="history-header">
-            <div class="history-title-row">
-                <span class="history-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
-                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-                    </svg>
-                </span>
-                <h2>Analysis History</h2>
-            </div>
-            <span class="history-count" id="history-count">0 scans</span>
-        </div>
-
-        <div class="history-list" id="history-list">
-            <div class="history-empty" id="history-empty">
-                <div class="empty-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
-                        stroke="var(--primary-border)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
-                        <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-                    </svg>
+    <div class="analyze-wrapper">
+        <aside class="history-panel">
+            <div class="history-header">
+                <div class="history-title-row">
+                    <span class="history-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                        </svg>
+                    </span>
+                    <h2>Analysis History</h2>
                 </div>
-                <p>No plants analyzed yet.</p>
-                <p class="empty-sub">Your scan history will appear here.</p>
-            </div>
-        </div>
-
-        <button class="clear-history-btn" id="clear-history-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Clear History
-        </button>
-    </aside>
-
-    <!-- RIGHT: Upload Form -->
-    <main class="upload-main">
-        <div class="form-card">
-            <div class="form-header">
-                <h1>Plant <span class="accent">Analyzer</span></h1>
-                <p class="form-subtitle">Upload a leaf image and provide details for a full diagnosis</p>
+                <span class="history-count" id="history-count">0 scans</span>
             </div>
 
-            <!-- Upload Box -->
-            <div class="upload-box" id="drop-zone">
-                <div class="upload-box-inner" id="upload-box-inner">
-                    <div class="upload-icon-wrap">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                            stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 16 12 12 8 16"/>
-                            <line x1="12" x2="12" y1="12" y2="21"/>
-                            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            <div class="history-list" id="history-list">
+                <div class="history-empty" id="history-empty">
+                    <div class="empty-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary-border)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+                            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
                         </svg>
                     </div>
-                    <h3>Drag &amp; Drop or <span class="click-link">Browse</span></h3>
-                    <p class="upload-hint">Supports: JPG, PNG, JPEG</p>
-                    <input type="file" id="file-input" hidden accept="image/jpg, image/png, image/jpeg">
+                    <p>No plants analyzed yet.</p>
+                    <p class="empty-sub">Your scan history will appear here.</p>
                 </div>
-                <div class="preview-overlay" id="preview-overlay" style="display:none;">
-                    <img id="preview-img" src="" alt="Preview">
-                    <button class="remove-img-btn" id="remove-img-btn" title="Remove image" aria-label="Remove image">
+            </div>
+
+            <button class="clear-history-btn" id="clear-history-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+                Clear History
+            </button>
+        </aside>
+
+        <main class="upload-main">
+            <div class="form-card">
+                <div class="form-header">
+                    <h1>Tea <span class="accent">Analyzer</span></h1>
+                    <p class="form-subtitle">Upload a leaf image and provide details for a full diagnosis</p>
+                </div>
+
+                <div class="upload-box" id="drop-zone">
+                    <div class="upload-box-inner" id="upload-box-inner">
+                        <div class="upload-icon-wrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 16 12 12 8 16"/>
+                                <line x1="12" x2="12" y1="12" y2="21"/>
+                                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                            </svg>
+                        </div>
+                        <h3>Drag &amp; Drop or <span class="click-link">Browse</span></h3>
+                        <p class="upload-hint">Supports: JPG, PNG, JPEG</p>
+                        <input type="file" id="file-input" hidden accept="image/jpg, image/png, image/jpeg">
+                    </div>
+                    <div class="preview-overlay" id="preview-overlay" style="display:none;">
+                        <img id="preview-img" src="" alt="Preview">
+                        <button class="remove-img-btn" id="remove-img-btn" title="Remove image" aria-label="Remove image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" x2="6" y1="6" y2="18"/>
+                                <line x1="6" x2="18" y1="6" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="history-image-viewer" id="history-image-viewer" style="display:none;">
+                    <img id="history-view-img" src="" alt="Scanned plant">
+                    <div class="history-view-no-img" id="history-view-no-img" style="display:none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary-border)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                            <circle cx="9" cy="9" r="2"/>
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                        <p>No image available for this record</p>
+                    </div>
+                    <button class="new-scan-btn" id="new-scan-btn" aria-label="Start new scan">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" x2="6" y1="6" y2="18"/>
                             <line x1="6" x2="18" y1="6" y2="18"/>
                         </svg>
+                        New Scan
                     </button>
                 </div>
-            </div>
 
-            <!-- History Image Viewer -->
-            <div class="history-image-viewer" id="history-image-viewer" style="display:none;">
-                <img id="history-view-img" src="" alt="Scanned plant">
-                <div class="history-view-no-img" id="history-view-no-img" style="display:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                        stroke="var(--primary-border)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                        <circle cx="9" cy="9" r="2"/>
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-                    </svg>
-                    <p>No image available for this record</p>
-                </div>
-                <button class="new-scan-btn" id="new-scan-btn" aria-label="Start new scan">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" x2="6" y1="6" y2="18"/>
-                        <line x1="6" x2="18" y1="6" y2="18"/>
-                    </svg>
-                    New Scan
-                </button>
-            </div>
+                <div class="fields-row">
+                    <div class="field-group">
+                        <label for="field-select">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                            </svg>
+                            Field
+                        </label>
+                        <div class="field-select-wrap">
+                            <select id="field-select" disabled>
+                                <option value="">Loading fields…</option>
+                            </select>
+                            <div class="field-select-loading" id="field-select-loading"></div>
+                            <div class="field-select-arrow" id="field-select-arrow" style="display:none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m6 9 6 6 6-6"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="field-select-error" id="field-select-error">Could not load fields.</p>
+                    </div>
 
-            <!-- Fields Row -->
-            <div class="fields-row">
-
-                <!-- FIELD dropdown -->
-                <div class="field-group">
-                    <label for="field-select">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
-                            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-                        </svg>
-                        Field
-                    </label>
-                    <div class="field-select-wrap">
-                        <select id="field-select" disabled>
-                            <option value="">Loading fields…</option>
-                        </select>
-                        <!-- spinner shown while loading -->
-                        <div class="field-select-loading" id="field-select-loading"></div>
-                        <!-- arrow shown after load -->
-                        <div class="field-select-arrow" id="field-select-arrow" style="display:none;">
+                    <div class="field-group">
+                        <label>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            Location
+                        </label>
+                        <button type="button" class="detect-location-btn" id="detect-location-btn" onclick="detectScanLocation()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m6 9 6 6 6-6"/>
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
                             </svg>
+                            <span id="detect-location-text">Detect My Location</span>
+                        </button>
+                        <input type="hidden" id="location-lat" value="">
+                        <input type="hidden" id="location-lng" value="">
+                        <p class="location-coords" id="location-coords" style="display:none;"></p>
+                    </div>
+
+                    <div class="field-group">
+                        <label>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+                            </svg>
+                            Barcode / Plant ID
+                        </label>
+
+                        <div class="barcode-combo-wrap">
+                            <input type="text" id="barcode-input"
+                                placeholder="e.g. PLT-20240601-007"
+                                class="text-field barcode-combo-input"
+                                autocomplete="off">
+
+                            <button type="button" class="barcode-gen-btn" id="barcode-gen-btn"
+                                title="Auto-generate barcode" onclick="generateBarcode()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="barcode-dropdown-btn" id="barcode-dropdown-btn"
+                                title="Select existing barcode" onclick="toggleBarcodeDropdown()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m6 9 6 6 6-6"/>
+                                </svg>
+                            </button>
+
+                            <div class="barcode-dropdown-list" id="barcode-dropdown-list" style="display:none;">
+                                <div class="barcode-dropdown-loading" id="barcode-dropdown-loading">Loading…</div>
+                            </div>
+                        </div>
+                        <p class="field-select-error" id="barcode-select-error" style="display:none;">Could not load barcodes.</p>
+                    </div>
+                </div>
+
+                <div id="no-fields-warning" style="display:none;
+                    background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;
+                    padding:12px 16px; display:none; align-items:center; gap:12px; margin-bottom:4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="flex-shrink:0;">
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                    </svg>
+                    <div>
+                        <p style="font-size:13.5px;font-weight:600;color:#92400e;margin:0 0 2px;">No fields registered</p>
+                        <p style="font-size:12.5px;color:#b45309;margin:0;">
+                            You need to add a field before scanning.
+                            <a href="{{ url_for('add_field') }}" style="color:#92400e;font-weight:700;text-decoration:underline;text-underline-offset:2px;">Add a field →</a>
+                        </p>
+                    </div>
+                </div>
+
+                <button class="scan-btn" id="scan-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                        <path d="M11 8v6M8 11h6"/>
+                    </svg>
+                    <span id="btn-text">Start Analysis</span>
+                </button>
+
+                <div class="result-card" id="result-card" style="display:none;">
+                    <div class="result-header">
+                        <h3>Analysis Result</h3>
+                        <span class="result-badge" id="result-badge">—</span>
+                    </div>
+                    <div class="result-rows">
+                        <div class="result-row">
+                            <span class="result-label">Status</span>
+                            <span class="result-value" id="status-text">Waiting...</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Confidence</span>
+                            <span class="result-value" id="confidence-text">--%</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Field</span>
+                            <span class="result-value" id="result-field">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Barcode</span>
+                            <span class="result-value" id="result-barcode">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Severity</span>
+                            <span class="result-value" id="result-severity">—</span>
+                        </div>
+                        <div class="result-row" id="recovery-row">
+                            <span class="result-label">Recovery</span>
+                            <span class="result-value" id="result-recovery">—</span>
                         </div>
                     </div>
-                    <p class="field-select-error" id="field-select-error">Could not load fields.</p>
-                </div>
-
-                <!-- LOCATION detect button -->
-                <div class="field-group">
-                    <label>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                            <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        Location
-                    </label>
-                    <button type="button" class="detect-location-btn" id="detect-location-btn" onclick="detectScanLocation()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-                        </svg>
-                        <span id="detect-location-text">Detect My Location</span>
-                    </button>
-                    <input type="hidden" id="location-lat" value="">
-                    <input type="hidden" id="location-lng" value="">
-                    <p class="location-coords" id="location-coords" style="display:none;"></p>
-                </div>
-
-                <!-- BARCODE -->
-                <div class="field-group">
-                    <label for="barcode-input">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
-                        </svg>
-                        Barcode / Plant ID
-                    </label>
-                    <input type="text" id="barcode-input" placeholder="e.g. PLT-20240601-007" class="text-field">
+                    <div class="treatment-box">
+                        <h4>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="vertical-align:-2px; margin-right:5px;">
+                                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                                <path d="m8.5 8.5 7 7"/>
+                            </svg>
+                            Recommended Treatment
+                        </h4>
+                        <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
+                    </div>
                 </div>
             </div>
-
-            <!-- No Fields Warning -->
-            <div id="no-fields-warning" style="display:none;
-                background:#fef3c7;
-                border:1px solid #f59e0b;
-                border-radius:10px;
-                padding:12px 16px;
-                display:none;
-                align-items:center;
-                gap:12px;
-                margin-bottom:4px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                    fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    style="flex-shrink:0;">
-                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
-                </svg>
-                <div>
-                    <p style="font-size:13.5px;font-weight:600;color:#92400e;margin:0 0 2px;">No fields registered</p>
-                    <p style="font-size:12.5px;color:#b45309;margin:0;">
-                        You need to add a field before scanning.
-                        <a href="/field/add" style="color:#92400e;font-weight:700;text-decoration:underline;text-underline-offset:2px;">Add a field →</a>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Scan Button -->
-            <button class="scan-btn" id="scan-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                    <path d="M11 8v6M8 11h6"/>
-                </svg>
-                <span id="btn-text">Start Analysis</span>
-            </button>
-
-            <!-- Result Card -->
-            <div class="result-card" id="result-card" style="display:none;">
-                <div class="result-header">
-                    <h3>Analysis Result</h3>
-                    <span class="result-badge" id="result-badge">—</span>
-                </div>
-                <div class="result-rows">
-                    <div class="result-row">
-                        <span class="result-label">Status</span>
-                        <span class="result-value" id="status-text">Waiting...</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">Confidence</span>
-                        <span class="result-value" id="confidence-text">--%</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">Field</span>
-                        <span class="result-value" id="result-field">—</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">Location</span>
-                        <span class="result-value" id="result-location">—</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">Barcode</span>
-                        <span class="result-value" id="result-barcode">—</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">Severity</span>
-                        <span class="result-value" id="result-severity">—</span>
-                    </div>
-                    <div class="result-row" id="recovery-row">
-                        <span class="result-label">Recovery</span>
-                        <span class="result-value" id="result-recovery">—</span>
-                    </div>
-                </div>
-                <div class="treatment-box">
-                    <h4>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                            stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            style="vertical-align:-2px; margin-right:5px;">
-                            <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-                            <path d="m8.5 8.5 7 7"/>
-                        </svg>
-                        Recommended Treatment
-                    </h4>
-                    <p id="treatment-text">Upload a plant leaf image to see treatment suggestions.</p>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
+        </main>
+    </div>
 {% endblock %}
 
 {% block extra_js %}
-    <script src="{{url_for('static',filename='js/analyze.js')}}"></script>
-    <script src="{{url_for('static',filename='js/image_uploader.js')}}"></script>
+    <script src="{{ url_for('static', filename='js/analyze.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script>
+
     <script>
+        // Restored Jinja variable so your backend can pass history data
         const dbRecords = {{ records | tojson }};
-        loadHistoryFromDB(dbRecords);
+
+        if(typeof loadHistoryFromDB === 'function') {
+            loadHistoryFromDB(dbRecords);
+        }
+
+        async function generateBarcode() {
+            const btn = document.getElementById('barcode-gen-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/generate-barcode', { method: 'POST' });
+                if (!res.ok) throw new Error('Request failed');
+                const data = await res.json();
+                document.getElementById('barcode-input').value = data.barcode;
+                checkScanReady();
+            } catch (err) {
+                console.error('Barcode generation failed:', err);
+                alert('Could not generate barcode. Please ensure backend is running.');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
     </script>
 {% endblock %}
