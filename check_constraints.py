@@ -252,6 +252,7 @@ def check_prerequisites() -> int:
 
     if db_status == 0 and ollama_status == 0:
         print_ok("All prerequisite checks passed")
+        return 0
 
     print_fail("One or more prerequisite checks failed")
     raise KeyError("One or more prerequisite checks failed")
