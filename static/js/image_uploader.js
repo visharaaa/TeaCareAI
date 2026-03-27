@@ -26,6 +26,7 @@ let analysisHistory = [];
 // ── BUTTON ENABLE / DISABLE GUARD ──
 // ══════════════════════════════════════════
 
+// This function checks if all conditions are met to enable the scan button
 function checkScanReady() {
     const hasImage   = fileInput.files.length > 0;
     const hasField   = fieldSelect.value !== '';
@@ -42,8 +43,7 @@ scanButton.disabled      = true;
 scanButton.style.opacity = '0.45';
 scanButton.style.cursor  = 'not-allowed';
 
-// Watch field and barcode directly
-// Image state is handled by analyze.js which calls checkScanReady() directly
+// Watch for changes in the relevant inputs to toggle the scan button
 fieldSelect.addEventListener('change', checkScanReady);
 barcodeInput.addEventListener('input', checkScanReady);
 
@@ -52,6 +52,7 @@ barcodeInput.addEventListener('input', checkScanReady);
 // ── FIELD DROPDOWN — fetch from Flask ──
 // ══════════════════════════════════════════
 
+// This IIFE fetches the list of fields from the database and populates the dropdown on page load
 (async function loadFields() {
     const spinner  = document.getElementById('field-select-loading');
     const arrow    = document.getElementById('field-select-arrow');
@@ -104,6 +105,8 @@ barcodeInput.addEventListener('input', checkScanReady);
 let barcodeCodes    = [];
 let barcodesLoaded  = false;
 
+// This function fetches existing barcode codes from the database and renders them in the dropdown.
+// It only fetches once and caches the results for subsequent openings of the dropdown.
 async function fetchBarcodeCodes() {
     if (barcodesLoaded) return;
     const loadingEl = document.getElementById('barcode-dropdown-loading');
@@ -119,6 +122,8 @@ async function fetchBarcodeCodes() {
     }
 }
 
+// This function renders the list of barcode codes as a dropdown. 
+// It is called after fetching the codes.
 function renderBarcodeList(codes) {
     const list = document.getElementById('barcode-dropdown-list');
     if (!list) return;
@@ -142,6 +147,8 @@ function renderBarcodeList(codes) {
     });
 }
 
+// This function toggles the visibility of the barcode dropdown list. 
+// It also sets up an outside click listener to trigger closeBarcodeDropdown() function to close the dropdown when clicking outside of it.
 function toggleBarcodeDropdown() {
     const list = document.getElementById('barcode-dropdown-list');
     const btn  = document.getElementById('barcode-dropdown-btn');
@@ -159,6 +166,8 @@ function toggleBarcodeDropdown() {
     }
 }
 
+// This function is use to close the barcode dropdown and remove the outside click listener. 
+// It is called from toggleBarcodeDropdown() and outsideClickHandler().
 function closeBarcodeDropdown() {
     const list = document.getElementById('barcode-dropdown-list');
     const btn  = document.getElementById('barcode-dropdown-btn');
@@ -167,6 +176,8 @@ function closeBarcodeDropdown() {
     document.removeEventListener('click', outsideClickHandler);
 }
 
+// This function handles clicks outside the barcode dropdown to close it. 
+// It is added as an event listener when the dropdown is opened and removed when the dropdown is closed.
 function outsideClickHandler(e) {
     const wrap = document.querySelector('.barcode-combo-wrap');
     if (wrap && !wrap.contains(e.target)) {
@@ -180,12 +191,15 @@ function outsideClickHandler(e) {
 // ── RAG TREATMENT FORMATTER ──
 // ══════════════════════════════════════════
 
-function formatRAGOutput(ragInput) {
+// This function takes the raw RAG output (which can be either a string or 
+// an array with confidence and refId) and formats it into a structured object with sections, confidence, and reference ID.
+function formatRAGOutput(ragOutput) {
     let rawText, confidence, refId;
-    if (Array.isArray(ragInput)) {
-        [rawText, confidence, refId] = ragInput;
+    console.log("RAG Input:", ragOutput);
+    if (Array.isArray(ragOutput)) {
+        [rawText, confidence, refId] = ragOutput;
     } else {
-        rawText = ragInput;
+        rawText = ragOutput;
         confidence = null;
         refId = null;
     }
@@ -197,7 +211,11 @@ function formatRAGOutput(ragInput) {
     };
 }
 
+// This function takes the formatted RAG output and renders it into HTML. 
+// It supports sections with optional headings, bullet or numbered lists, confidence badges, and reference IDs. 
+// The output is styled with CSS classes for better presentation.
 function renderRAGToHTML(formatted) {
+    console.log("formatted:", formatted);
     const { sections, confidence, refId } = formatted;
     const sectionIcons = {
         'Symptoms': '🍃',
@@ -235,6 +253,8 @@ function renderRAGToHTML(formatted) {
     return `<div class="rag-output">${sectionsHTML}${footerHTML}</div>`;
 }
 
+// This function takes the raw text output from the RAG model and 
+// parses it into structured sections with headings, paragraphs, and lists.
 function _parseIntoSections(text) {
     const lines = text.split('\n').map(l => l.trim());
     const sections = [];
@@ -269,6 +289,8 @@ function _parseIntoSections(text) {
     return sections;
 }
 
+// This function takes a text string and parses inline bold formatting denoted by **double asterisks**. 
+// It returns an array of parts with a flag indicating whether each part is bold or not, as well as the plain text without formatting.
 function _parseInline(text) {
     const parts = [];
     const regex = /\*\*(.+?)\*\*/g;
@@ -282,6 +304,7 @@ function _parseInline(text) {
     return { parts, plainText: parts.map(p => p.text).join('') };
 }
 
+// This function takes a confidence score (as a string or number), parses it, and categorizes it into levels (high, moderate, low) with corresponding colors for display.
 function _parseConfidence(score) {
     const value = parseFloat(score);
     let level, color;
@@ -291,12 +314,19 @@ function _parseConfidence(score) {
     return { value, level, color };
 }
 
+// This function escapes special HTML characters in a string to prevent XSS vulnerabilities when rendering user-generated content.
 function _escHTML(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function _capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+// This function capitalizes the first letter of a string and lowercases the rest. 
+// It is used for formatting confidence level badges.
+function _capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1); 
+}
 
+// This function takes the raw RAG output, formats it using formatRAGOutput(), renders it to HTML using renderRAGToHTML(), 
+// and then sets the innerHTML of the given element to display the treatment information.
 function renderTreatment(el, ragInput) {
     el.innerHTML = renderRAGToHTML(formatRAGOutput(ragInput));
 }
@@ -306,6 +336,7 @@ function renderTreatment(el, ragInput) {
 // ── GPS LOCATION DETECT ──
 // ══════════════════════════════════════════
 
+// This function uses the browser's Geolocation API to detect the user's current location when they click the "Detect My Location" button.
 function detectScanLocation() {
     const btn    = document.getElementById('detect-location-btn');
     const label  = document.getElementById('detect-location-text');
@@ -347,6 +378,7 @@ function detectScanLocation() {
 // ── LOCATION WARNING HELPERS ──
 // ══════════════════════════════════════════
 
+// These functions show or hide a warning message below the scan button if there are issues with obtaining the user's location.
 function showLocationWarning(msg) {
     let el = document.getElementById('location-warning');
     if (!el) {
@@ -359,6 +391,7 @@ function showLocationWarning(msg) {
     el.style.display = 'block';
 }
 
+// This function hides the location warning message if it is currently displayed.
 function hideLocationWarning() {
     const el = document.getElementById('location-warning');
     if (el) el.style.display = 'none';
@@ -369,6 +402,8 @@ function hideLocationWarning() {
 // ── SCAN BUTTON ──
 // ══════════════════════════════════════════
 
+// This event listener is triggered when the user clicks the "Start Analysis" button. 
+// It gathers all the necessary data (image, field, barcode, location), sends it to the server for analysis, and then processes the response to display the results and update the history.
 scanButton.addEventListener('click', async () => {
     if (fileInput.files.length === 0) { alert('Please upload an image first!'); return; }
 
@@ -498,8 +533,12 @@ scanButton.addEventListener('click', async () => {
 // ── HISTORY ──
 // ══════════════════════════════════════════
 
-function addToHistory(entry) { analysisHistory.unshift(entry); renderHistory(); }
+// This function adds a new entry to the in-memory analysis history and then calls renderHistory() to update the displayed history list.
+function addToHistory(entry) {
+    analysisHistory.unshift(entry); renderHistory();
+}
 
+// This function clears the analysis history and renders the display accordingly.
 function renderHistory() {
     historyEmpty.style.display = analysisHistory.length === 0 ? 'flex' : 'none';
     historyCount.textContent   = `${analysisHistory.length} scan${analysisHistory.length !== 1 ? 's' : ''}`;
@@ -589,6 +628,9 @@ const fieldsRowEl       = document.querySelector('.fields-row');
 const scanBtnEl         = document.getElementById('scan-button');
 const noFieldsWarningEl = document.getElementById('no-fields-warning');
 
+// This function switches the view from the upload interface to the history viewer. 
+// It hides the upload box and shows the history viewer with the selected image. 
+// If no image URL is provided, it shows a placeholder message instead.
 function enterHistoryView(imageUrl) {
     dropZoneEl.style.display    = 'none';
     historyViewer.style.display = 'block';
@@ -605,6 +647,8 @@ function enterHistoryView(imageUrl) {
     }
 }
 
+// This function switches the view back from the history viewer to the upload interface. 
+// It hides the history viewer and shows the upload box again, as well as resetting any active states in the history list.
 function exitHistoryView() {
     historyViewer.style.display = 'none';
     dropZoneEl.style.display    = 'block';
@@ -614,8 +658,12 @@ function exitHistoryView() {
     resultCard.style.display = 'none';
 }
 
+// This event listener is attached to the "New Scan" button in the history viewer. 
+// When clicked, it calls exitHistoryView() to switch back to the upload interface.
 newScanBtn.addEventListener('click', exitHistoryView);
 
+// This event listener is attached to the "Clear History" button. 
+// When clicked, it prompts the user for confirmation and if confirmed, it clears the in-memory history and re-renders the history list.
 clearHistoryBtn.addEventListener('click', () => {
     if (analysisHistory.length === 0) return;
     if (confirm('Clear all analysis history?')) { analysisHistory = []; renderHistory(); }
@@ -626,6 +674,8 @@ clearHistoryBtn.addEventListener('click', () => {
 // ── LOAD HISTORY FROM DATABASE ──
 // ══════════════════════════════════════════
 
+// This function takes an array of history records (fetched from the database) and loads them into the in-memory history store. 
+// It maps the raw database fields to the expected format for the history entries and then calls renderHistory() to display them.
 function loadHistoryFromDB(records) {
     if (!Array.isArray(records) || records.length === 0) { renderHistory(); return; }
     analysisHistory = records.map(record => ({
