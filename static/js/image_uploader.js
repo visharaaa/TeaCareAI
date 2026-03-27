@@ -18,6 +18,9 @@ const historyEmpty     = document.getElementById('history-empty');
 const historyCount     = document.getElementById('history-count');
 const clearHistoryBtn  = document.getElementById('clear-history-btn');
 
+const recoveryRow = document.getElementById('recovery-row');
+const recoveryEl  = document.getElementById('result-recovery');
+
 // ── In-memory history store ──
 let analysisHistory = [];
 
@@ -478,10 +481,10 @@ scanButton.addEventListener('click', async () => {
             const severityRaw = (result.severity_level || '—').toLowerCase();
             severityEl.innerHTML = '';
             if (severityRaw !== '—') {
-                const badge = document.createElement('span');
-                badge.className = `severity-badge ${severityRaw}`;
-                badge.textContent = severityRaw.charAt(0).toUpperCase() + severityRaw.slice(1);
-                severityEl.appendChild(badge);
+                const severityBadge = document.createElement('span');
+                severityBadge.className = `severity-badge ${severityRaw}`;
+                severityBadge.textContent = severityRaw.charAt(0).toUpperCase() + severityRaw.slice(1);
+                severityEl.appendChild(severityBadge);
             } else {
                 severityEl.textContent = '—';
             }
@@ -489,16 +492,23 @@ scanButton.addEventListener('click', async () => {
             // ── Recovery — hide if status is 'new' ──
             const recoveryRow = document.getElementById('recovery-row');
             const recoveryEl  = document.getElementById('result-recovery');
+            const recoveryBadgeRow = document.getElementById('recovery-badge-row');
+            const recoveryBadgeEl  = document.getElementById('recovery-badge');
             const detectionStatus = (result.detection_status || result.status || '').toLowerCase();
             if (detectionStatus === 'new') {
                 recoveryRow.style.display = 'none';
+                recoveryBadgeRow.style.display = 'none';
             } else {
                 recoveryRow.style.display = '';
                 recoveryEl.textContent = result.recovery_percentage
                     ? result.recovery_percentage + '%'
                     : '—';
+                recoveryBadgeRow.style.display = '';
+                recoveryBadgeEl.textContent =detectionStatus ? detectionStatus.charAt(0).toUpperCase() + detectionStatus.slice(1) : '—';
+                recoveryBadgeEl.className = `recovery-badge ${detectionStatus}`;
             }
 
+            console.log('Analysis Result:', result);
             addToHistory({
                 status:            result.status,
                 confidence:        result.confidence,
@@ -508,7 +518,7 @@ scanButton.addEventListener('click', async () => {
                 barcode:           barcode,
                 severity_level:    result.severity_level || '—',
                 recovery_percentage: result.recovery_percentage || null,
-                detection_status:  result.detection_status || result.status,
+                detection_status:  result.detection_status,
                 imageDataUrl:      previewImg.src,
                 date:              new Date().toLocaleString()
             });
@@ -595,12 +605,18 @@ function renderHistory() {
             // ── Recovery ──
             const recoveryRow = document.getElementById('recovery-row');
             const recoveryEl  = document.getElementById('result-recovery');
+            const recoveryBadgeRow = document.getElementById('recovery-badge-row');
+            const recoveryBadgeEl  = document.getElementById('recovery-badge');
             const dStatus = (entry.detection_status || '').toLowerCase();
             if (dStatus === 'new') {
                 recoveryRow.style.display = 'none';
+                recoveryBadgeRow.style.display = 'none';
             } else {
                 recoveryRow.style.display = '';
                 recoveryEl.textContent = entry.recovery_percentage ? entry.recovery_percentage + '%' : '—';
+                recoveryBadgeRow.style.display = '';
+                recoveryBadgeEl.textContent =dStatus ? dStatus.charAt(0).toUpperCase() + dStatus.slice(1) : '—';
+                recoveryBadgeEl.className = `recovery-badge ${dStatus}`;
             }
 
             resultCard.style.display   = 'block';

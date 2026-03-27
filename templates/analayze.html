@@ -70,10 +70,10 @@
     display: none;
 }
 
-        /* ── Severity level colors ── */
-        .severity-low    { color: #16a34a; font-weight: 700; }
-        .severity-medium { color: #d97706; font-weight: 700; }
-        .severity-high   { color: #dc2626; font-weight: 700; }
+/* ── Severity level colors ── */
+.severity-low    { color: #16a34a; font-weight: 700; }
+.severity-medium { color: #d97706; font-weight: 700; }
+.severity-high   { color: #dc2626; font-weight: 700; }
 
 /* ── Barcode combo — single input + gen + dropdown ── */
 .barcode-combo-wrap {
@@ -222,12 +222,59 @@
 
 @keyframes barcode-spin { to { transform: rotate(360deg); } }
 
-        /* ── Severity badge ── */
-        .severity-badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; }
-        .severity-badge.low    { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-        .severity-badge.medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
-        .severity-badge.high   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-    </style>
+/* ── Severity badge ── */
+.severity-badge{ 
+    display: inline-block; 
+    padding: 2px 10px; 
+    border-radius: 99px; 
+    font-size: 12px; 
+    font-weight: 700; 
+}
+
+.severity-badge.low{ 
+    background: #dcfce7; 
+    color: #16a34a; 
+    border: 1px solid #86efac; 
+}
+
+.severity-badge.medium{ 
+    background: #fef3c7; 
+    color: #d97706; 
+    border: 1px solid #fcd34d; 
+}
+
+.severity-badge.high{ 
+    background: #fee2e2; 
+    color: #dc2626; 
+    border: 1px solid #fca5a5; 
+}
+
+.recovery-badge { 
+    display: inline-block; 
+    padding: 2px 10px; 
+    border-radius: 99px; 
+    font-size: 12px; 
+    font-weight: 700; 
+}
+
+.recovery-badge.improving {
+    background: #dcfce7; 
+    color: #16a34a; 
+    border: 1px solid #86efac;
+}
+
+.recovery-badge.deteriorating {
+    background: #fee2e2; 
+    color: #dc2626; 
+    border: 1px solid #fca5a5;
+}
+
+.recovery-badge.stable {
+    background: #fef3c7; 
+    color: #d97706; 
+    border: 1px solid #fcd34d;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -467,8 +514,12 @@
                             <span class="result-label">Severity</span>
                             <span class="result-value" id="result-severity">—</span>
                         </div>
+                        <div class="result-row" id="recovery-badge-row">
+                            <span class="result-label">Recovery Status</span>
+                            <span class="result-value" id="recovery-badge">—</span>
+                        </div>
                         <div class="result-row" id="recovery-row">
-                            <span class="result-label">Recovery</span>
+                            <span class="result-label">Recovery percentage</span>
                             <span class="result-value" id="result-recovery">—</span>
                         </div>
                     </div>
