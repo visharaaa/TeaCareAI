@@ -21,7 +21,7 @@
             <button onclick="window.location.href='{{ url_for('add_field') }}'">Add Field</button>
             <button class="not-actived" onclick="window.location.href='{{url_for('about')}}'">About Us</button>
 
-            {% if session.get('user_id') %}
+            {% if session.get('user_code') %}
                 <span class="header-username">{{ session.get('user_name') }}</span>
                 <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
                     <button type="submit" class="not-actived logout-btn">Logout</button>

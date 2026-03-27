@@ -194,7 +194,7 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
             print(f"Prediction failed: {NN_result}")
             return {'error': 'Failed to process Neural Network'}
 
-        recovery_percentage = NN_result["change"]
+        recovery_percentage = round(NN_result["change"], 2)
         recovery_status = NN_result["status"]
 
 
