@@ -10,3 +10,4 @@ data/
 pyproject.toml
 uv.lock
 test.*
+static/icons/members-images/

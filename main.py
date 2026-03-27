@@ -187,4 +187,4 @@ if __name__ == '__main__':
         check_prerequisites()
     except KeyError:
         sys.exit(1)
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)

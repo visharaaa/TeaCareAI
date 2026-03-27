@@ -66,8 +66,8 @@
 }
 
 .avatar {
-    width: 72px;
-    height: 72px;
+    width: 70%;
+    aspect-ratio: 1/1;
     background: var(--primary);
     color: var(--white);
     border-radius: 50%;
@@ -104,4 +104,11 @@
     color: var(--text-muted);
     line-height: 1.65;
     margin-top: 10px;
+}
+
+.member-img{
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover; 
+    border-radius: 50%;
 }
