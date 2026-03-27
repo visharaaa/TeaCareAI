@@ -239,6 +239,7 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
         'treatment':  llm_response,
         'severity_level': severity_level,
         'recovery_percentage': str(recovery_percentage),
+        'recovery_state': recovery_status,
         'detection_status': format_recovery_status(recovery_status),
         'barcode': chat_code,
         'location': f"{latitude},{longitude}"

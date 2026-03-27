@@ -4,3 +4,9 @@ __pycache__/
 .env
 static/uploaded_leaves/
 data/rag_kb/
+data/
+.venv/
+.python-version
+pyproject.toml
+uv.lock
+test.*
