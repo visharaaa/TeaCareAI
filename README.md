@@ -1,78 +1,93 @@
-# Tea Disease Analysis and Recovery Platform
+# TeaCareAI
 
-Flask web application for tea leaf disease workflows, combining:
+TeaCareAI is a Flask-based platform for tea leaf disease detection, treatment recommendation, and treatment progress tracking.
 
-- Image-based tea disease detection
-- Treatment recommendation generation (RAG + Ollama)
-- Recovery prediction for follow-up scans
-- PostgreSQL-backed users, fields, and scan history
+The system combines:
 
-## Features
+- YOLO-based tea disease detection from leaf images
+- RAG-based treatment generation (ChromaDB + SentenceTransformer + Ollama)
+- Recovery status prediction using a TensorFlow model
+- PostgreSQL-backed auth, fields, scan history, and session token management
 
-- User sign up, login, and session management
-- Field registration and user-specific field retrieval
-- Leaf image upload and analysis pipeline
-- Treatment suggestions based on retrieval + LLM generation
-- Recovery tracking model for post-treatment assessment
+## Current Flow
+
+1. User signs up/logs in.
+2. User registers field details.
+3. User uploads a leaf image in Analyze.
+4. Model predicts disease, severity, infection percentage, and lesion metadata.
+5. RAG retrieves treatment context and Ollama generates farmer-friendly guidance.
+6. Follow-up scans on the same chat barcode calculate recovery trend (`new`, `improving`, `stable`, `deteriorating`).
 
 ## Tech Stack
 
-- Backend: Flask
-- Database: PostgreSQL
-- CV model: PyTorch + Ultralytics
-- RAG: ChromaDB + Sentence Transformers + Ollama
+- Backend: Flask 3
+- Database: PostgreSQL 17
+- Vision model: Ultralytics YOLO (PyTorch)
+- RAG: ChromaDB + SentenceTransformers + Ollama
 - Recovery model: TensorFlow / Keras
-- Frontend: Jinja templates + CSS + JavaScript
+- Frontend: Jinja templates + JS + CSS
 
-## Project Layout
+## Project Structure
 
-- `main.py`: Flask app entry point
-- `controller.py`: Main application logic and orchestration
-- `auth.py`: Authentication and session utilities
-- `bootstrap.py`: Database + Ollama bootstrap helper
-- `check_constraints.py`: Preflight checks (database + Ollama)
-- `config.py`: Environment-driven settings
-- `app/database/`: DB initialization scripts and connection helpers
-- `app/services/`: Disease detection, recovery, and recommendation services
-- `templates/`: HTML templates
-- `static/`: CSS, JS, and uploaded files
+- `main.py`: Startup entrypoint (runs preflight checks, then starts app)
+- `app.py`: Flask routes and HTTP handlers
+- `controller.py`: Core orchestration for prediction, RAG, and persistence
+- `auth.py`: Authentication/session helpers
+- `check_constraints.py`: Preflight checks for Python version, DB schema, and Ollama model
+- `bootstrap.py`: One-time bootstrap for DB schema and Ollama model warm-up
+- `config.py`: Environment/config mapping
+- `app/database/`: DB connection, schema init, and SQL scripts
+- `app/services/`: Disease detector, RAG recommender, and recovery tracker services
+- `templates/`: HTML views
+- `static/`: CSS, JS, and uploaded image assets
 
 ## Prerequisites
 
-- Python 3.11+
-- PostgreSQL 16+ (or Dockerized PostgreSQL)
+- Python 3.11.x (project targets >=3.11 and <3.13)
+- PostgreSQL running and reachable
 - Ollama installed and running
-- Windows PowerShell (commands below use PowerShell syntax)
+- Windows PowerShell (commands below)
 
-Note: `requirements.txt` currently uses CUDA-targeted PyTorch wheels.
+## Environment Variables
 
-## Environment Setup
-
-Create your environment file from the template:
+Create `.env` from template:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Then edit `.env` values for your machine.
+Required variables (from `.env.example`):
 
-## Required Environment Variables
+- `SECRET_KEY`
+- `SESSION_LIFETIME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DEFAULT_DB_NAME`
+- `OPENWEATHERMAP_API_KEY`
 
-See `.env.example` for defaults and examples.
+Important additions used by the current code:
 
-- `SECRET_KEY`: Flask secret key
-- `SESSION_LIFETIME`: Session lifetime in hours (integer)
-- `DB_USER`: PostgreSQL username
-- `DB_PASSWORD`: PostgreSQL password
-- `DB_HOST`: PostgreSQL host (`localhost` for local, `db` for Docker Compose)
-- `DB_PORT`: PostgreSQL port (usually `5432`)
-- `DB_NAME`: Main database name used by the app
-- `DEFAULT_DB_NAME`: Existing bootstrap database (usually `postgres`)
-- `OPENWEATHERMAP_API_KEY`: Weather API key
+- `LLM_NAME` (example: `llama3.1:8b`)
+- `EMBEDDING_MODEL` (example: `BAAI/bge-small-en-v1.5`)
 
-Ollama model selection is currently configured directly in `config.py` via `Config.LLM_NAME`.
+## Required Artifacts
 
-## Local Run (Without Docker)
+TeaCareAI expects these files at runtime:
+
+- `app/models/tea_disease_identifier_weight.pt`
+- `app/models/RecoveryTracker/recovery_model.h5`
+- `app/models/RecoveryTracker/scaler.pkl`
+- `app/models/RecoveryTracker/feature_columns.pkl`
+- `data/treatments_data.xlsx`
+
+Optional/training-only dataset referenced in config:
+
+- `data/tea_health_dataset.xlsx`
+
+## Local Setup and Run
 
 1. Create and activate a virtual environment.
 
@@ -88,71 +103,118 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-3. Ensure PostgreSQL is running and your `.env` matches it.
+If you do not have a CUDA-compatible setup, use `requirements_cuda.txt` alternatives carefully and pin versions as needed for your machine.
 
+3. Configure `.env` for your local PostgreSQL and Ollama model settings.
 
-
-4. Initialize database objects and seed data.
+4. Run one-time bootstrap (creates DB/schema and checks model availability via Ollama).
 
 ```powershell
 python bootstrap.py
 ```
 
-6. Start the web app.
+5. Start the application.
 
 ```powershell
 python main.py
 ```
 
-7. Open `http://localhost:5000`.
+6. Open:
 
-## Docker Run
+```text
+http://localhost:5000
+```
 
-1. Create `.env` from `.env.example`.
-2. Set `DB_HOST=db` in `.env`.
-3. Build and run services.
+## Docker Setup
+
+The repository includes a CUDA-enabled Docker setup.
+
+1. Create `.env` and set `DB_HOST=db`.
+2. Build and run services.
 
 ```powershell
 docker compose up --build
 ```
 
-4. On first run, initialize schema/data in the app container.
+3. (First run) initialize DB/schema and model bootstrap inside the app container.
 
 ```powershell
 docker compose exec app python bootstrap.py
 ```
 
-5. Open `http://localhost:5000`.
+4. Open `http://localhost:5000`.
 
-## Health/Preflight Checks
+Notes:
 
-Run prerequisite checks for database constraints and Ollama model availability:
+- `docker-compose.yml` mounts `app/models` and `data/rag_kb` as volumes.
+- GPU reservation is configured through Compose `deploy.resources.reservations.devices`.
+
+## Preflight Checks
+
+Run checks manually:
 
 ```powershell
 python check_constraints.py
 ```
 
-## Main Routes
+`main.py` also runs this automatically before starting Flask.
 
-- `/`: Home
-- `/signup`: User registration
-- `/login`: User login
-- `/logout`: User logout
-- `/field/add`: Register field data
-- `/analayze`: Run leaf analysis
-- `/api/fields`: Fetch fields for current user
-- `/api/generate-barcode`: Generate a new chat barcode
+Checks include:
+
+- Python version check
+- PostgreSQL DB existence and required schema constraints
+- Ollama server reachability and presence of configured model
+
+## Routes
+
+UI routes:
+
+- `GET /`
+- `GET /about`
+- `GET|POST /login`
+- `GET|POST /signup`
+- `GET|POST /logout`
+- `GET|POST /field/add`
+- `GET|POST /analayze` (spelling in code is currently `analayze`)
+
+API routes:
+
+- `GET /api/fields`
+- `POST /api/generate-barcode`
+- `GET /api/chat-codes`
+
+## Database
+
+Schema script: `app/database/init_db/create_tables.sql`
+
+Main entities:
+
+- `users`
+- `field`
+- `scan_history_chat`
+- `user_scan_history`
+- `disease`
+- `detection`
+- `treatment_recommendation`
+- `applied_treatment`
+- `user_refresh_token`
 
 ## Troubleshooting
 
-- Database errors:
-  - Verify `.env` database values.
-  - Confirm PostgreSQL is reachable on `DB_HOST:DB_PORT`.
-- Ollama/model errors:
-  - Verify Ollama daemon is running.
-  - Pull the model configured in `Config.LLM_NAME`.
-- Missing model/data artifacts:
-  - Confirm files exist under `app/models/` and `data/` as expected by `config.py`.
-- Upload issues:
-  - Ensure `static/uploaded_leaves/` exists and is writable.
+- App exits immediately on startup:
+  - Run `python check_constraints.py` and fix the failing check.
+- DB connection failures:
+  - Verify `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and database existence.
+- Missing Ollama model:
+  - Ensure Ollama daemon is running and pull the model set in `LLM_NAME`.
+- RAG returns poor/empty results:
+  - Ensure `data/treatments_data.xlsx` exists and has treatment-related columns.
+- Upload/prediction issues:
+  - Ensure `static/uploaded_leaves` exists and is writable.
+
+## Development Notes
+
+- Analyze route/template naming currently uses `analayze` (`templates/analayze.html`).
+- Startup chain is `main.py -> check_constraints.py -> app.py`.
+- `bootstrap.py` is intended for first-time environment/database/model initialization.
 
