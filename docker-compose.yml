@@ -1,51 +1,81 @@
-version: '3.9'
-
 services:
-
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     env_file:
       - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      OLLAMA_HOST: http://ollama:11434
+      LLM_NAME: ${LLM_NAME:-llama3.1:8b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
     volumes:
-      # persist uploaded scan images between restarts
       - ./static/uploaded_leaves:/app/static/uploaded_leaves
-      # mount model weights (large files — keep outside image)
       - ./app/models:/app/app/models
-      # mount RAG vector DB (built once, reused)
       - ./data/rag_kb:/app/data/rag_kb
     depends_on:
       db:
         condition: service_healthy
-    # GPU passthrough
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [ gpu ]
+              capabilities: [gpu]
     restart: unless-stopped
 
   db:
-    image: postgres:16
+    image: postgres:17
     env_file:
       - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      LLM_NAME: ${LLM_NAME:-llama3.1:8b}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "ollama pull \"$${LLM_NAME}\""]
+    restart: "no"
 
 volumes:
   postgres_data:
+  ollama_data:
