@@ -201,4 +201,14 @@ INSERT INTO disease (disease_name, description, standard_symptoms) VALUES
         'Red Rust',
         'An algal disease caused by Cephaleuros parasiticus affecting tea leaves and stems. More common in poorly maintained or nutrient-deficient plantations.',
         'Rusty red or orange powdery patches on upper leaf surface; circular to irregular velvety growth; hair-like algal filaments visible; yellowing of surrounding tissue; premature leaf drop in severe cases'
+    ),
+    (
+        'Healthy Leaf',
+        'A healthy tea leaf with no visible signs of fungal infection, pest damage, or nutrient deficiency. Represents optimal plant health.',
+        'Uniform green color; smooth and intact surface; no lesions, spots, or abnormal discoloration; normal leaf shape and growth pattern'
+    ),
+    (
+        'Unknown Disease',
+        'The system detected abnormalities but could not confidently classify the visual symptoms into a known disease category. Manual expert inspection is recommended.',
+        'Atypical symptoms not matching standard disease profiles; complex mixed infections; unusual damage patterns requiring further analysis'
     );
