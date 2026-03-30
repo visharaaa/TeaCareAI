@@ -96,7 +96,7 @@ class TeaDiseaseRAG:
             logging.info(f"Successfully ingested {len(documents)} records.")
 
 
-    def healthy_leaf(self, location="Sri Lanka"):
+    def healthy_leaf(self, location = "Sri Lanka"):
         llm_prompt = f"""
         You are a helpful tea farmer assistant in {location}, Sri Lanka.
         The user has reported that the tea leaf is **healthy** (no disease detected).
@@ -121,6 +121,21 @@ class TeaDiseaseRAG:
 
     def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
         query = f"{disease_name} {severity_level}"
+
+        # Check is the leaf is healthy
+        if "healthy" in query.lower() or "no disease" in query.lower() or "normal" in query.lower():
+            final_response = self.healthy_leaf(location)
+
+            self.log_request(query, "Healthy", location, "N/A", 100, final_response)
+
+            return {
+                "status": "success",
+                "matched_disease": "Healthy Leaf",
+                "matched_severity": "N/A",
+                "llm_response": final_response,
+                "confidence": 100
+            }
+
         query_embedding = self.embedder.encode(query).tolist()
         severity_cap = severity_level.capitalize()
         logging.info(f"Querying for: {disease_name} ({severity_cap})")
@@ -257,8 +272,8 @@ if __name__ == "__main__":
 
     # Run an example query
     result = rag_system.get_recommendation(
-        disease_name = "Healthy",
-        severity_level = "Honda",
+        disease_name = "Blister Blight",
+        severity_level = "Low",
         location = "Hatton"
     )
 
