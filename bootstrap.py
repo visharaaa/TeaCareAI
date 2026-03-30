@@ -1,5 +1,5 @@
 import ollama
-from app.database.init_db import init_db
+from app.database.init_db import init_db as create_db
 from config import Config
 
 #params => none
@@ -18,10 +18,18 @@ def init_ollam():
             ollama.pull(req_llm)
             print("Download complete and ready to use!")
     except ConnectionError as e:
-        print(f"Connection error: {e}")
+        raise ConnectionError from e
     except Exception as e:
-        print(f"An error occurred: {e}")
+        raise Exception from e
+
+def init_db(Default_DB_name,new_DB_name,table_script,test_script):
+    print("Initializing database...")
+    create_db(Default_DB_name,new_DB_name,table_script,test_script)
+    print("Database initialized!")
 
 # create the new database and tables
-init_db(Config.DEFAULT_DB_NAME,Config.DB_NAME,'app/database/init_db/create_tables.sql','app/database/init_db/test_data.sql')
-init_ollam()
+try:
+    init_db(Config.DEFAULT_DB_NAME,Config.DB_NAME,'app/database/init_db/create_tables.sql','app/database/init_db/test_data.sql')
+    init_ollam()
+except Exception as e:
+    print(f"Connection error: {e}")

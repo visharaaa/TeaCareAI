@@ -247,13 +247,35 @@ def run_ollama_checks() -> int:
 
 
 def check_prerequisites() -> int:
+    py_status = run_python_version_check()
     db_status = run_db_checks()
     ollama_status = run_ollama_checks()
 
-    if db_status == 0 and ollama_status == 0:
+    # If all three checks return 0 (success), we are good to go!
+    if py_status == 0 and db_status == 0 and ollama_status == 0:
         print_ok("All prerequisite checks passed")
         return 0
 
     print_fail("One or more prerequisite checks failed")
-    raise KeyError("One or more prerequisite checks failed")
-   
+    return 1
+
+
+def run_python_version_check() -> int:
+    current_version = sys.version_info
+    MIN_PYTHON_VERSION=Config.PYTHON_VERSION
+
+    if current_version >= MIN_PYTHON_VERSION:
+        print_ok(
+            f"Python version >= {MIN_PYTHON_VERSION[0]}.{MIN_PYTHON_VERSION[1]} "
+            f"(Found {current_version.major}.{current_version.minor}.{current_version.micro})"
+        )
+        return 0
+
+    print_fail(
+        f"Python version {MIN_PYTHON_VERSION[0]}.{MIN_PYTHON_VERSION[1]} or higher is required. "
+        f"Found {current_version.major}.{current_version.minor}.{current_version.micro}"
+    )
+    return 1
+
+if __name__ == "__main__":
+    sys.exit(check_prerequisites())

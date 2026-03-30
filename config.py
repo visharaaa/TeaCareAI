@@ -44,5 +44,6 @@ class Config:
     OPENWEATHERMAP_API_KEY=os.getenv("OPENWEATHERMAP_API_KEY")
 
     LLM_NAME = "llama3.1:8b"
+    PYTHON_VERSION=(3,11)
 
     
