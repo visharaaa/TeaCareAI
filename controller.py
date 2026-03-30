@@ -6,7 +6,7 @@ import threading
 import queue
 import bcrypt
 import requests
-
+from sympy.parsing.sympy_parser import null
 
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
@@ -134,78 +134,86 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
     masks=vision_result['masks'],
     color_deviation=vision_result['color_deviation']
 
+    already_has = False
+    recovery_percentage = 0
+    recovery_status = 'new'
+    RAG_confidence_score=0
+    llm_response=null
+
+
     # check: Did the worker return an error?
     if isinstance(vision_result, Exception):
         print(f"Prediction failed: {vision_result}")
         return {'error': 'Failed to process image'}
 
-    # input for recovery_tracker
-    rag_input=(disease_name,severity_level)
-    rag_queue.put((rag_input, response_rag_queue))
+    skip,standardized_disease_name=standardize_disease_name(disease_name)
 
-    # get the detection history data using chat_code
-    detection_history=db.detection_data_by_chat_code(chat_code)
+    if not skip:
+        # input for recovery_tracker
+        rag_input=(disease_name,severity_level)
+        rag_queue.put((rag_input, response_rag_queue))
 
-    already_has=False
-    recovery_percentage=0
-    recovery_status = 'new'
+        # get the detection history data using chat_code
+        detection_history=db.detection_data_by_chat_code(chat_code)
 
-    # detection_history empty mean this is a new chat
-    if detection_history != []:
-        already_has=True
-        detection_history=detection_history[0]
 
-    # this chat already has mean this is the second time of detection, which means the user has applied the treatment and want to check the recovery status
-    if already_has:
+        # detection_history empty mean this is a new chat
+        if detection_history != []:
+            already_has=True
+            detection_history=detection_history[0]
 
-        # if location data is empty getting the location data from database by chat_code in scan_history_chat table
-        if latitude == '' or longitude == '':
-            result = db.get_location_by_chat_code(
-                chat_code)  # to avoid the result= None error when the chat_code is not exist in the database
-            if result != None:
-                if None not in result.values():  # to avoid the location data be None which will cause the error when convert to float
-                    latitude = str(result['latitude'])
-                    longitude = str(result['longitude'])
+        # this chat already has mean this is the second time of detection, which means the user has applied the treatment and want to check the recovery status
+        if already_has:
 
-        # if location data is empty getting the location data from database by field in field table
-        if latitude == '' or longitude == '':
-            result = db.get_field_location_by_field_id(field_id)
-            latitude = str(result['latitude'])
-            longitude = str(result['longitude'])
+            # if location data is empty getting the location data from database by chat_code in scan_history_chat table
+            if latitude == '' or longitude == '':
+                result = db.get_location_by_chat_code(
+                    chat_code)  # to avoid the result= None error when the chat_code is not exist in the database
+                if result != None:
+                    if None not in result.values():  # to avoid the location data be None which will cause the error when convert to float
+                        latitude = str(result['latitude'])
+                        longitude = str(result['longitude'])
 
-        #get whether data like humidity and temperature
-        whether_data=get_weather_data(latitude,longitude)
+            # if location data is empty getting the location data from database by field in field table
+            if latitude == '' or longitude == '':
+                result = db.get_field_location_by_field_id(field_id)
+                latitude = str(result['latitude'])
+                longitude = str(result['longitude'])
 
-        # input for NN
-        NN_input = {
-            'disease': disease_name,
-            'days_after_treatment': (datetime.now(timezone.utc) - detection_history['detected_at']).days,
-            'initial_affected_area_pct':float( (detection_history["affected_area"]/detection_history["healthy_leaf_area"])*100),
-            'affected_area_pct': infection_percentage,
-            'color_deviation': color_deviation,
-            'humidity': whether_data["humidity"],
-        }
-        NN_queue.put((NN_input, response_NN_queue))
+            #get whether data like humidity and temperature
+            whether_data=get_weather_data(latitude,longitude)
+
+            # input for NN
+            NN_input = {
+                'disease': disease_name,
+                'days_after_treatment': (datetime.now(timezone.utc) - detection_history['detected_at']).days,
+                'initial_affected_area_pct':float( (detection_history["affected_area"]/detection_history["healthy_leaf_area"])*100),
+                'affected_area_pct': infection_percentage,
+                'color_deviation': color_deviation,
+                'humidity': whether_data["humidity"],
+            }
+            NN_queue.put((NN_input, response_NN_queue))
+
+            # prediction from disease identifier
+            NN_result = response_NN_queue.get()
+
+            if isinstance(NN_result, Exception):
+                print(f"Prediction failed: {NN_result}")
+                return {'error': 'Failed to process Neural Network'}
+
+            recovery_percentage = round(NN_result["change"], 2)
+            recovery_status = NN_result["status"]
+
 
         # prediction from disease identifier
-        NN_result = response_NN_queue.get()
+        rag_result = response_rag_queue.get()
 
-        if isinstance(NN_result, Exception):
-            print(f"Prediction failed: {NN_result}")
-            return {'error': 'Failed to process Neural Network'}
+        if isinstance(rag_result, Exception):
+            print(f"Prediction failed: {rag_result}")
+            return {'error': 'Failed to get response RAG'}
 
-        recovery_percentage = round(NN_result["change"], 2)
-        recovery_status = NN_result["status"]
+        llm_response, RAG_confidence_score=rag_result
 
-
-    # prediction from disease identifier
-    rag_result = response_rag_queue.get()
-
-    if isinstance(rag_result, Exception):
-        print(f"Prediction failed: {rag_result}")
-        return {'error': 'Failed to get response RAG'}
-
-    llm_response, RAG_confidence_score=rag_result
 
     #save to database
     try:
@@ -216,7 +224,7 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
               latitude=latitude,
               longitude=longitude,
               elevation=elevation,
-              disease_name=disease_name,
+              disease_name=standardized_disease_name,
               disease_identifier_confidence_score=float(disease_identifier_confidence_score),
               bounding_box=json.dumps(masks),
               severity_level=str(severity_level).lower(),
@@ -224,17 +232,18 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
               healthy_leaf_area=int(healthy_leaf_area),
               affected_area=int(affected_area),
               image_name=str(filename),
-              RAG_confidence_score=float(RAG_confidence_score),
+              RAG_confidence_score=float(RAG_confidence_score) ,
               generated_advice=llm_response,
               status=recovery_status,
-              recovery_percentage=float(recovery_percentage)
+              recovery_percentage=float(recovery_percentage),
+              skip=skip
               )
         
     except Exception as e:
         print(f"Warning: could not save to DB: {e}")
 
     result = {
-        'status':     standardize_disease_name(disease_name),
+        'status':     standardized_disease_name,
         'confidence': str(disease_identifier_confidence_score) + '%',
         'treatment':  llm_response,
         'severity_level': severity_level,
@@ -351,24 +360,26 @@ def get_users_field_details(user_code):
 def standardize_disease_name(disease_name):
     match disease_name:
         case 'blister_blight':
-            return 'Blister Blight'
+            return False,'Blister Blight'
         case 'brown_blight':
-            return 'Brown Blight'
-        case 'grey_blight':
+            return False,'Brown Blight'
+        case False,'grey_blight':
             return 'Grey Blight'
-        case 'helopeltis':
-            return 'Helopeltis'
+        case False,'helopeltis':
+            return False,'Helopeltis'
         case 'red_rust':
-            return 'Red Rust'
+            return False,'Red Rust'
+        case 'leaf':
+            return True,'Healthy Leaf'
         case _:
-            return disease_name
+            return True,"Unknown Disease"
 
 # params => user_id, field_id, chat_code, latitude, longitude, elevation, disease_name, disease_identifier_confidence_score, bounding_box, severity_level, lesion_count, healthy_leaf_area, affected_area, image_name, RAG_confidence_score, generated_advice, recovery_percentage, status
 # This function will be called to save the detection and treatment data to the database after each detection.
 # returns a tuple of (success: bool, message: str)
 #scan_id and chat code are the same
 def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:float,elevation:float,disease_name:str,disease_identifier_confidence_score:float,bounding_box:json,severity_level:str,lesion_count:int,
-              healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,recovery_percentage=0.00,status='new'):
+              healthy_leaf_area:float,affected_area:float,image_name:str,RAG_confidence_score:float,generated_advice:str,skip:bool,recovery_percentage=0.00,status='new'):
 
     # Check if the chat_code already exists
     result=db.get_scan_chat_history_by_chat_code(chat_code)
@@ -431,7 +442,7 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
 
     try:
         # get the disease_id for the disease_name
-        disease_id=db.get_disease_id_by_disease_name(standardize_disease_name(disease_name))
+        disease_id=db.get_disease_id_by_disease_name(disease_name)
     except Exception as e:
         print(e)
     finally:
@@ -471,34 +482,35 @@ def save_data(user_id:int,field_id:int,chat_code:str,latitude:float,longitude:fl
                 db.remove_scan_history_chat_by_chat_code(chat_code)
             return False,'Error when adding new detection.'
 
-    try:
-        # get new recommendation_id and recommendation_code
-        recommendation_id,recommendation_code=db.get_new_recommendation_code()
+    if not skip:
+        try:
+            # get new recommendation_id and recommendation_code
+            recommendation_id,recommendation_code=db.get_new_recommendation_code()
 
-        # save the treatment recommendation result into recommended_treatment table
-        recommendation_result=db.add_recommended_treatment(
-            recommendation_id=recommendation_id,
-            recommendation_code=recommendation_code,
-            generated_advice=generated_advice,
-            RAG_confidence_score=RAG_confidence_score
-        )
-        # link the detection and recommendation in the applied_treatment table
-        applied_treatment_result=db.add_applied_treatment(
-            detection_id=detection_id,
-            recommendation_id=recommendation_id
-        )
+            # save the treatment recommendation result into recommended_treatment table
+            recommendation_result=db.add_recommended_treatment(
+                recommendation_id=recommendation_id,
+                recommendation_code=recommendation_code,
+                generated_advice=generated_advice,
+                RAG_confidence_score=RAG_confidence_score
+            )
+            # link the detection and recommendation in the applied_treatment table
+            applied_treatment_result=db.add_applied_treatment(
+                detection_id=detection_id,
+                recommendation_id=recommendation_id
+            )
 
-    except Exception as e:
-        print(e)
+        except Exception as e:
+            print(e)
 
-    finally:
-        if not (recommendation_result and applied_treatment_result):
-            print('Deleting recommendation...')
-            db.remove_detection_by_detection_id(detection_id)
-            db.remove_applied_treatment(detection_id)
-            if added:
-                db.remove_scan_history_chat_by_chat_code(chat_code)
-            return False,'Error when storing treatment.'
+        finally:
+            if not (recommendation_result and applied_treatment_result):
+                print('Deleting recommendation...')
+                db.remove_detection_by_detection_id(detection_id)
+                db.remove_applied_treatment(detection_id)
+                if added:
+                    db.remove_scan_history_chat_by_chat_code(chat_code)
+                return False,'Error when storing treatment.'
 
     print("added to db")
     return True,'Data added successfully.'

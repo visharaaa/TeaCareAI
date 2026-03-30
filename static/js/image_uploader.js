@@ -7,6 +7,7 @@ const resultCard       = document.getElementById('result-card');
 const resultBadge      = document.getElementById('result-badge');
 const resultBarcode    = document.getElementById('result-barcode');
 const resultField      = document.getElementById('result-field');
+const statusLabel      = document.getElementById('status-label')
 
 const barcodeInput     = document.getElementById('barcode-input');
 const locationLatInput = document.getElementById('location-lat');
@@ -413,6 +414,7 @@ scanButton.addEventListener('click', async () => {
     const selectedOption = fieldSelect.options[fieldSelect.selectedIndex];
     const fieldId   = fieldSelect.value;
     const fieldName = fieldId ? selectedOption.textContent : '—';
+    statusLabel.textContent='Status'
 
     const file = fileInput.files[0];
     const formData = new FormData();
@@ -469,6 +471,7 @@ scanButton.addEventListener('click', async () => {
             const barcode = result.barcode  || barcodeInput.value.trim() || '—';
 
             statusText.textContent     = result.status;
+            statusLabel.textContent    = "Disease Name"
             statusText.style.color     = '#157f3c';
             confidenceText.textContent = result.confidence;
             renderTreatment(treatmentText, result.treatment);
@@ -582,6 +585,7 @@ function renderHistory() {
 
         item.addEventListener('click', () => {
             statusText.textContent     = entry.status;
+            statusLabel.textContent    = 'Disease Name'
             statusText.style.color     = '#157f3c';
             confidenceText.textContent = entry.confidence;
             renderTreatment(treatmentText, entry.treatment);
