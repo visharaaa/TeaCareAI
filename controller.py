@@ -6,7 +6,6 @@ import threading
 import queue
 import bcrypt
 import requests
-from sympy.parsing.sympy_parser import null
 
 from app.database.db import Database
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
@@ -56,7 +55,7 @@ def tea_disease_identifier_worker():
 def tea_disease_rag_worker():
     print("Background TeaDiseaseRAG worker starting...")
     # Load the model into new object
-    tea_disease_rag=TeaDiseaseRAG(excel_path=Config.KB_PATH,db_path=Config.VECTOR_DB_PATH)
+    tea_disease_rag=TeaDiseaseRAG(excel_path=Config.KB_PATH,db_path=Config.VECTOR_DB_PATH,embedding_model = Config.EMBEDDING_MODEL)
     print("TeaDiseaseRAG Model loaded successfully! Worker is ready.")
     while True:
         # get the next disease from the queue
@@ -137,8 +136,6 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
     already_has = False
     recovery_percentage = 0
     recovery_status = 'new'
-    RAG_confidence_score=0
-    llm_response=null
 
 
     # check: Did the worker return an error?
@@ -148,11 +145,12 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
 
     skip,standardized_disease_name=standardize_disease_name(disease_name)
 
-    if not skip:
-        # input for recovery_tracker
-        rag_input=(disease_name,severity_level)
-        rag_queue.put((rag_input, response_rag_queue))
+    # input for recovery_tracker
+    rag_input=(standardize_disease_name_for_RAG(disease_name),severity_level)
+    rag_queue.put((rag_input, response_rag_queue))
 
+
+    if not skip:
         # get the detection history data using chat_code
         detection_history=db.detection_data_by_chat_code(chat_code)
 
@@ -205,14 +203,14 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
             recovery_status = NN_result["status"]
 
 
-        # prediction from disease identifier
-        rag_result = response_rag_queue.get()
+    # prediction from disease identifier
+    rag_result = response_rag_queue.get()
 
-        if isinstance(rag_result, Exception):
-            print(f"Prediction failed: {rag_result}")
-            return {'error': 'Failed to get response RAG'}
+    if isinstance(rag_result, Exception):
+        print(f"Prediction failed: {rag_result}")
+        return {'error': 'Failed to get response RAG'}
 
-        llm_response, RAG_confidence_score=rag_result
+    llm_response, RAG_confidence_score=rag_result
 
 
     #save to database
@@ -363,16 +361,33 @@ def standardize_disease_name(disease_name):
             return False,'Blister Blight'
         case 'brown_blight':
             return False,'Brown Blight'
-        case False,'grey_blight':
-            return 'Grey Blight'
-        case False,'helopeltis':
+        case 'grey_blight':
+            return False,'Grey Blight'
+        case 'helopeltis':
             return False,'Helopeltis'
         case 'red_rust':
             return False,'Red Rust'
         case 'leaf':
-            return True,'Healthy Leaf'
+            return False,'Healthy Leaf'
         case _:
             return True,"Unknown Disease"
+
+def standardize_disease_name_for_RAG(disease_name):
+    match disease_name:
+        case 'blister_blight':
+            return 'Blister Blight'
+        case 'brown_blight':
+            return 'Brown Blight'
+        case 'grey_blight':
+            return 'Grey Blight'
+        case 'helopeltis':
+            return False, 'Red Spider'
+        case 'red_rust':
+            return False, 'Red Rust'
+        case 'leaf':
+            return False, 'Healthy Leaf'
+        case _:
+            return True, "no disease"
 
 # params => user_id, field_id, chat_code, latitude, longitude, elevation, disease_name, disease_identifier_confidence_score, bounding_box, severity_level, lesion_count, healthy_leaf_area, affected_area, image_name, RAG_confidence_score, generated_advice, recovery_percentage, status
 # This function will be called to save the detection and treatment data to the database after each detection.
