@@ -96,6 +96,29 @@ class TeaDiseaseRAG:
             logging.info(f"Successfully ingested {len(documents)} records.")
 
 
+    def healthy_leaf(self, location="Sri Lanka"):
+        llm_prompt = f"""
+        You are a helpful tea farmer assistant in {location}, Sri Lanka.
+        The user has reported that the tea leaf is **healthy** (no disease detected).
+        Respond in a positive, encouraging, and friendly tone.
+        Important rules:
+        - Do not mention any disease, symptoms, or treatments.
+        - Confirm that the leaf looks healthy.
+        - Give 3-4 practical preventive tips to keep the leaf and plant healthy.
+        - Mention the importance of regular monitoring.
+        - Keep the response short, clear, and easy to read (use bullet points).
+        - End with a short safety / best practice note.
+        Respond naturally as if speaking directly to a tea farmer.
+        """
+
+        try:
+            ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [{'role': 'user', 'content': llm_prompt}])
+            final_response = ollama_response['message']['content'].strip()
+        except:
+            final_response = f"The leaf appears healthy in {location}. Continue good farming practices and monitor regularly."
+
+        return final_response
+
     def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
         query = f"{disease_name} {severity_level}"
         query_embedding = self.embedder.encode(query).tolist()
@@ -234,7 +257,7 @@ if __name__ == "__main__":
 
     # Run an example query
     result = rag_system.get_recommendation(
-        disease_name = "Blister Blight",
+        disease_name = "Healthy",
         severity_level = "Honda",
         location = "Hatton"
     )
