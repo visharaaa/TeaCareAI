@@ -1,7 +1,6 @@
 from datetime import datetime
 import psycopg2
 from psycopg2.extras import Json
-from tensorboard.compat.tensorflow_stub.dtypes import double
 from config import Config
 import json
 

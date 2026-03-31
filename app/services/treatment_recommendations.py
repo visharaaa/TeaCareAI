@@ -6,6 +6,7 @@ import ollama
 from datetime import datetime
 import csv
 import logging
+from config import Config
 
 # Logger configuration
 logging.basicConfig(level = logging.INFO, format = '%(asctime)s - %(levelname)s - %(message)s')
@@ -94,9 +95,46 @@ class TeaDiseaseRAG:
             )
             logging.info(f"Successfully ingested {len(documents)} records.")
 
+    def healthy_leaf(self, location="Sri Lanka"):
+        llm_prompt = f"""
+           You are a helpful tea farmer assistant in {location}, Sri Lanka.
+           The user has reported that the tea leaf is **healthy** (no disease detected).
+           Respond in a positive, encouraging, and friendly tone.
+           Important rules:
+           - Do not mention any disease, symptoms, or treatments.
+           - Confirm that the leaf looks healthy.
+           - Give 3-4 practical preventive tips to keep the leaf and plant healthy.
+           - Mention the importance of regular monitoring.
+           - Keep the response short, clear, and easy to read (use bullet points).
+           - End with a short safety / best practice note.
+           Respond naturally as if speaking directly to a tea farmer.
+           """
 
-    def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
+        try:
+            ollama_response = ollama.chat(model='llama3.1:8b', messages=[{'role': 'user', 'content': llm_prompt}])
+            final_response = ollama_response['message']['content'].strip()
+        except:
+            final_response = f"The leaf appears healthy in {location}. Continue good farming practices and monitor regularly."
+
+        return final_response
+
+    def get_recommendation(self, disease_name=None, severity_level=None, location = "Sri Lanka"):
         query = f"{disease_name} {severity_level}"
+
+        # Check is the leaf is healthy
+        if "healthy" in query.lower() or "no disease" in query.lower() or "normal" in query.lower():
+            final_response = self.healthy_leaf(location)
+
+            #self.log_request(query, "Healthy", location, "N/A", 100, final_response)
+
+            return {
+                "status": "success",
+                "matched_disease": "Healthy Leaf",
+                "matched_severity": "N/A",
+                "llm_response": final_response,
+                "confidence": 100
+            }
+
         query_embedding = self.embedder.encode(query).tolist()
         severity_cap = severity_level.capitalize()
         logging.info(f"Querying for: {disease_name} ({severity_cap})")
@@ -165,7 +203,7 @@ class TeaDiseaseRAG:
         """
 
         try:
-            ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [
+            ollama_response = ollama.chat(model = Config.LLM_NAME, messages = [
                 {'role': 'user', 'content': llm_prompt}
             ])
             final_response = ollama_response['message']['content'].strip()

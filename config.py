@@ -32,7 +32,10 @@ class Config:
     # 4. RAG & Treatment Settings
     VECTOR_DB_PATH = os.path.join(BASE_DIR, "data", "rag_kb")
     KB_PATH=os.path.join(BASE_DIR, "data","treatments_data.xlsx")
-    MODEL_VERSION="llama3.1:8b"
+    MODEL_VERSION=os.getenv("LLM_NAME")
+    LLM_NAME = os.getenv("LLM_NAME")
+    EMBEDDING_MODEL=os.getenv("EMBEDDING_MODEL")
+
 
     # NN Model Settings
     NN_MODEL_TRAIN_DATA_PATH=os.path.join(BASE_DIR,"data", "tea_health_dataset.xlsx")
@@ -43,6 +46,7 @@ class Config:
     #API keys
     OPENWEATHERMAP_API_KEY=os.getenv("OPENWEATHERMAP_API_KEY")
 
-    LLM_NAME = "llama3.1:8b"
+
+    PYTHON_VERSION=(3,11)
 
     

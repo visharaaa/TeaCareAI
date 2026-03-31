@@ -1,3 +1,4 @@
+import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from app.database.db import Database
 
@@ -31,9 +32,10 @@ def create_postgres_db(default_db,new_db):
 def init_db(default_db,new_db,create_tables_path,test_data_path):
     try:
         create_postgres_db(default_db,new_db)
+    except psycopg2.OperationalError as e:
+        raise psycopg2.OperationalError(e)
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return
+        raise Exception(f"An error occurred: {e}")
     database=Database()
     database.create_tables(create_tables_path)
     #database.add_dummimg_data(test_data_path)
