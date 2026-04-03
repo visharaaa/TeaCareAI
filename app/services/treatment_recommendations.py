@@ -1,4 +1,3 @@
-<<<<<<< HEAD:app/services/treatment_recommendations.py
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 import chromadb
@@ -8,18 +7,7 @@ from datetime import datetime
 import csv
 import logging
 from config import Config
-=======
-import csv
-import logging
-import os
-from datetime import datetime
-import chromadb
-import ollama
-import pandas as pd
-from sentence_transformers import SentenceTransformer
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
 
-# Lowest confidence = 53.7
 # Logger configuration
 logging.basicConfig(level = logging.INFO, format = '%(asctime)s - %(levelname)s - %(message)s')
 
@@ -122,50 +110,22 @@ class TeaDiseaseRAG:
            Respond naturally as if speaking directly to a tea farmer.
            """
 
-<<<<<<< HEAD:app/services/treatment_recommendations.py
         try:
             ollama_response = ollama.chat(model='llama3.1:8b', messages=[{'role': 'user', 'content': llm_prompt}])
-=======
-    def healthy_leaf(self, location = "Sri Lanka"):
-        llm_prompt = f"""
-        You are a helpful tea farmer assistant in {location}, Sri Lanka.
-        The user has reported that the tea leaf is **healthy** (no disease detected).
-        Respond in a positive, encouraging, and friendly tone.
-        Important rules:
-        - Do not mention any disease, symptoms, or treatments.
-        - Confirm that the leaf looks healthy.
-        - Give 3-4 practical preventive tips to keep the leaf and plant healthy.
-        - Mention the importance of regular monitoring.
-        - Keep the response short, clear, and easy to read (use bullet points).
-        - End with a short safety / best practice note.
-        Respond naturally as if speaking directly to a tea farmer.
-        """
-
-        try:
-            ollama_response = ollama.chat(model = 'llama3.1:8b', messages = [{'role': 'user', 'content': llm_prompt}])
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
             final_response = ollama_response['message']['content'].strip()
         except:
             final_response = f"The leaf appears healthy in {location}. Continue good farming practices and monitor regularly."
 
         return final_response
 
-<<<<<<< HEAD:app/services/treatment_recommendations.py
     def get_recommendation(self, disease_name=None, severity_level=None, location = "Sri Lanka"):
-=======
-    def get_recommendation(self, disease_name, severity_level, location = "Sri Lanka"):
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
         query = f"{disease_name} {severity_level}"
 
         # Check is the leaf is healthy
         if "healthy" in query.lower() or "no disease" in query.lower() or "normal" in query.lower():
             final_response = self.healthy_leaf(location)
 
-<<<<<<< HEAD:app/services/treatment_recommendations.py
             #self.log_request(query, "Healthy", location, "N/A", 100, final_response)
-=======
-            self.log_request(query, "Healthy", location, "N/A", 100, final_response)
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
 
             return {
                 "status": "success",
@@ -223,29 +183,6 @@ class TeaDiseaseRAG:
         treatments = best_match["treatments"]
         confidence_percent = round((1 - results["distances"][0][best_index]) * 100, 1)
 
-        # If low confidence
-        if confidence_percent < 50:
-            print(f"\nLow confidence match detected ({confidence_percent}%)")
-
-            # Show top 3
-            all_results = self.collection.query(
-                query_embeddings = [query_embedding],
-                n_results = 3,
-                include = ["metadatas"]
-            )
-
-            print("System is not very confident about this match.")
-            print("Following are some matches")
-            for i, meta in enumerate(all_results["metadatas"][0]):
-                print(f"{i + 1} . {meta['disease']} - {meta['severity']} severity")
-
-            print("\nPlease try again and enter a correct query.")
-
-            return {
-                "status": "low_confidence",
-                "message": "Low confidence match. Please enter a correct query."
-            }
-
         # Generate LLM Response
         llm_prompt = f"""
         You are a helpful tea disease assistant in {location}, Sri Lanka. Mention the provided location in the response.
@@ -274,12 +211,7 @@ class TeaDiseaseRAG:
             final_response = f"Error generating ollama response: {str(e)}"
 
         # Log and return
-<<<<<<< HEAD:app/services/treatment_recommendations.py
         #self.log_request(query, severity, location, disease, confidence_percent, final_response)
-=======
-        self.log_request(query, severity, location, disease, confidence_percent, final_response)
-        print(f"Confidence: {confidence_percent}%")
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
 
         return {
             "status": "success",
@@ -305,7 +237,6 @@ class TeaDiseaseRAG:
         return response
 
 
-<<<<<<< HEAD:app/services/treatment_recommendations.py
 # if __name__ == "__main__":
 #     # System initialization
 #     rag_system = TeaDiseaseRAG(
@@ -322,24 +253,4 @@ class TeaDiseaseRAG:
 #
 #     print("\nLLM response:")
 #     print(result.get('llm_response', result.get('message')))
-=======
-# Main
-if __name__ == "__main__":
-    # System initialization
-    rag_system = TeaDiseaseRAG(
-        excel_path = "../data_folder/treatments_data_v2.xlsx",
-        db_path = "chroma_DB"
-    )
-
-    # Run an example query
-    result = rag_system.get_recommendation(
-        disease_name = "Blister Blight",
-        severity_level = "Low",
-        location = "Hatton"
-    )
-
-    print("\nLLM response:")
-    print(result.get('llm_response', result.get('message')))
->>>>>>> TreatmentRecommendations:model/rag_version_2.py
-
 
