@@ -254,4 +254,3 @@ class TeaDiseaseRAG:
 #     print("\nLLM response:")
 #     print(result.get('llm_response', result.get('message')))
 
-

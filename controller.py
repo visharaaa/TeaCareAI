@@ -542,6 +542,25 @@ def get_weather_data(latitude,longitude):
     print(temperature)
     return {'humidity':humidity, 'temperature':temperature}
 
+
+def get_elevation(lat, lng, api_key):
+    url = f"https://maps.googleapis.com/maps/api/elevation/json?locations={lat},{lng}&key={api_key}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+
+        if data['status'] == 'OK':
+            elevation = data['results'][0]['elevation']
+            return elevation
+        else:
+            print(f"API Error: {data['status']}")
+            return None
+
+    except Exception as e:
+        print(f"Connection error: {e}")
+        return None
+
 # params => None
 # This function is used to generate a new unique chat code for each new chat. 
 # It checks the existing chat codes in the database, finds the maximum one, and generates the next one in hexadecimal format.
