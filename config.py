@@ -112,7 +112,7 @@ class Config:
             "a bag or container",
             "electronic equipment",
         ]
-    CLIP_THRESHOLD=float(os.getenv("CLIP_THRESHOLD"))
+    CLIP_THRESHOLD=os.getenv("CLIP_THRESHOLD")
     CLIP_MODEL=os.getenv("CLIP_MODEL")
 
     

@@ -6,7 +6,7 @@ import os
 class LeafVerifier:
     def __init__(self, positive_labels, negative_labels, imgPath, threshold=0.5, model="ViT-B/32"):
         self.imgPath = imgPath
-        self.threshold = threshold
+        self.threshold = float(threshold)
         self.num_positive = len(positive_labels)
         self.labels = positive_labels + negative_labels
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
