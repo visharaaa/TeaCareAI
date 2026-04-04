@@ -8,6 +8,8 @@ const resultBadge      = document.getElementById('result-badge');
 const resultBarcode    = document.getElementById('result-barcode');
 const resultField      = document.getElementById('result-field');
 const statusLabel      = document.getElementById('status-label')
+const confidenceLabel      = document.getElementById('confidence-label')
+
 
 const barcodeInput     = document.getElementById('barcode-input');
 const locationLatInput = document.getElementById('location-lat');
@@ -469,7 +471,33 @@ scanButton.addEventListener('click', async () => {
         if (response.ok) {
             const loc     = result.location || ((lat && lng) ? `${lat}, ${lng}` : '—');
             const barcode = result.barcode  || barcodeInput.value.trim() || '—';
-
+            if (result.status === 'error') {
+                const banner = document.getElementById('error-banner');
+                const bannerMsg = document.getElementById('error-banner-msg');
+                const resultRows = document.getElementById('result-rows');
+                const treatmentBox = resultCard.querySelector('.treatment-box');
+                if (banner) {
+                    bannerMsg.textContent = result.error || 'An unexpected error occurred. Please try again.';
+                    banner.style.display = 'flex';
+                }
+                if (resultRows) resultRows.style.display = 'none';
+                if (treatmentBox) treatmentBox.style.display = 'none';
+                resultBadge.textContent = 'Error';
+                resultBadge.style.background = '#fee2e2';
+                resultBadge.style.color = '#dc2626';
+                resultBadge.style.borderColor = '#fca5a5';
+                return;
+            }
+            // Reset error state for successful result
+            const banner = document.getElementById('error-banner');
+            const resultRows = document.getElementById('result-rows');
+            const treatmentBox = resultCard.querySelector('.treatment-box');
+            if (banner) banner.style.display = 'none';
+            if (resultRows) resultRows.style.display = '';
+            if (treatmentBox) treatmentBox.style.display = '';
+            resultBadge.style.background = '';
+            resultBadge.style.color = '';
+            resultBadge.style.borderColor = '';
             statusText.textContent     = result.status;
             statusLabel.textContent    = "Disease Name"
             statusText.style.color     = '#157f3c';

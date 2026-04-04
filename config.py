@@ -49,4 +49,70 @@ class Config:
 
     PYTHON_VERSION=(3,11)
 
+    #CLIP Configurations
+    CLIP_POSITIVE_LABELS=[
+            "a tea leaf",
+            "tea plant leaves",
+            "a close up of a tea leaf",
+        ]
+    CLIP_NEGATIVE_LABELS=[
+            # People & body parts
+            "a human face",
+            "a person",
+            "a hand",
+            "a body part",
+            "a crowd of people",
+
+            # Animals
+            "an animal",
+            "a dog",
+            "a cat",
+            "a bird",
+            "an insect",
+
+            # Vehicles & transport
+            "a car or vehicle",
+            "a motorcycle",
+            "a truck",
+            "an airplane",
+            "a boat",
+
+            # Indoor objects & furniture
+            "indoor furniture",
+            "a chair or table",
+            "a bed or sofa",
+            "a lamp or light fixture",
+            "a shelf or cabinet",
+
+            # Food & drink
+            "food or drink",
+            "a fruit or vegetable",
+            "a cup or bottle",
+            "cooked or prepared food",
+            "a snack or dessert",
+
+            # Documents & screens
+            "a document or paper",
+            "a book or magazine",
+            "a phone or computer screen",
+            "a printed label or sign",
+            "a whiteboard or chalkboard",
+
+            # Outdoor non-plant scenes
+            "a building or structure",
+            "a road or pavement",
+            "a sky or cloud",
+            "a body of water",
+            "a mountain or rock",
+
+            # Miscellaneous objects
+            "a tool or machine",
+            "a plastic object",
+            "a fabric or clothing",
+            "a bag or container",
+            "electronic equipment",
+        ]
+    CLIP_THRESHOLD=float(os.getenv("CLIP_THRESHOLD"))
+    CLIP_MODEL=os.getenv("CLIP_MODEL")
+
     

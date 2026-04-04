@@ -8,6 +8,7 @@ import bcrypt
 import requests
 
 from app.database.db import Database
+from app.services.leaf_verifier import LeafVerifier
 from app.services.tea_disease_identifier import TeaDiseaseIdentifier
 from app.services.treatment_recommendations import TeaDiseaseRAG
 from app.services.recovery_tracker import TreatmentProgressTracker
@@ -30,6 +31,14 @@ code_lock = threading.Lock()
 ## params => None
 # This function will run in a separate thread and continuously process images from the vision_queue
 def tea_disease_identifier_worker():
+    print("Background LeafVerifier worker starting...")
+    leaf_verifier= LeafVerifier(
+        model=Config.CLIP_MODEL,
+        positive_labels=Config.CLIP_POSITIVE_LABELS,
+        negative_labels=Config.CLIP_NEGATIVE_LABELS,
+        threshold=Config.CLIP_THRESHOLD,
+        imgPath=Config.UPLOAD_FOLDER
+    )
     print("Background TeaDiseaseIdentifier worker starting...")
     # Load the model into new object
     tea_disease_identifier=TeaDiseaseIdentifier(Config.TEA_DISEASE_IDENTIFIER_MODEL_PATH,Config.UPLOAD_FOLDER)
@@ -40,12 +49,19 @@ def tea_disease_identifier_worker():
         # Wait for the tread to be completely free
         with threading_lock:
             try:
+                # Check the images contain a leafs
+                leaf_verifier_result=leaf_verifier.is_tea_leaf(file_name)
+                print(leaf_verifier_result)
+                if leaf_verifier_result == False:
+                    raise Exception(f"The uploaded image does not appear to be a tea leaf. Please upload a clear image of a tea leaf for accurate diagnosis.")
+
                 # Process the one image.
                 result=tea_disease_identifier.get_disease(file_name)
                 # Put the result into this specific user's private pager
                 response_queue.put(result)
             except Exception as e:
                 # If the model crashes on a bad image, send the error back
+                print(e)
                 response_queue.put(Exception(f"Error processing image: {str(e)}"))
         # Tell the main waiting room this task is officially done
         vision_queue.task_done()
@@ -69,7 +85,7 @@ def tea_disease_rag_worker():
                 response.put(result)
             except Exception as e:
                 # If the model crashes, send the error back
-                response.put(Exception(f"Error processing image: {str(e)}"))
+                response.put(Exception(str(e)))
         rag_queue.task_done()
 
 # This function will run in a separate thread and continuously process the input from the NN_queue
@@ -122,6 +138,16 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
     # The Flask route pauses right here and waits for the worker to finish the math
     vision_result = response_vision_queue.get()
 
+    # check: Did the worker return an error?
+    if isinstance(vision_result, Exception):
+        print(f"Prediction failed: {vision_result}")
+        error = f"Failed to process Image : {vision_result}"
+        result = {
+            'status': "error",
+            'error': error
+        }
+        return result
+
     # prediction from disease identifier
     disease_name=vision_result["disease_name"]
     disease_identifier_confidence_score=vision_result['confident']
@@ -136,12 +162,6 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
     already_has = False
     recovery_percentage = 0
     recovery_status = 'new'
-
-
-    # check: Did the worker return an error?
-    if isinstance(vision_result, Exception):
-        print(f"Prediction failed: {vision_result}")
-        return {'error': 'Failed to process image'}
 
     skip,standardized_disease_name=standardize_disease_name(disease_name)
 
@@ -197,7 +217,12 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
 
             if isinstance(NN_result, Exception):
                 print(f"Prediction failed: {NN_result}")
-                return {'error': 'Failed to process Neural Network'}
+                error='Failed to process Neural Network'
+                result = {
+                    'status': "error",
+                    'error': error
+                }
+                return result
 
             recovery_percentage = round(NN_result["change"], 2)
             recovery_status = NN_result["status"]
@@ -208,7 +233,12 @@ def predict(user_code,img,field_id, chat_code:str,latitude, longitude,elevation=
 
     if isinstance(rag_result, Exception):
         print(f"Prediction failed: {rag_result}")
-        return {'error': 'Failed to get response RAG'}
+        error = 'Failed to process RAG'
+        result = {
+            'status': "error",
+            'error': error
+        }
+        return result
 
     llm_response, RAG_confidence_score=rag_result
 
