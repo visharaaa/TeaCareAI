@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+
+{% block title %}User Manual — TeaCare AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user_manual.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ── -->
+<section class="manual-hero">
+    <div class="manual-hero-inner">
+        <span class="section-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                style="vertical-align:-1px;margin-right:4px;">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            User Manual
+        </span>
+        <h1 class="section-title">TeaCare <span style="color:var(--primary);">AI</span> Guide</h1>
+        <p class="section-sub" style="margin:0 auto;">
+            Everything you need to detect tea leaf diseases, get treatment recommendations,
+            and track recovery — step by step.
+        </p>
+        <div class="hero-pills">
+            <span class="hero-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                Disease Detection
+            </span>
+            <span class="hero-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                </svg>
+                Treatment Guide
+            </span>
+            <span class="hero-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Recovery Tracking
+            </span>
+        </div>
+    </div>
+</section>
+
+<!-- ── Page layout ── -->
+<div class="manual-layout">
+
+    <!-- Sidebar TOC -->
+    <aside class="manual-toc" id="manual-toc">
+        <p class="toc-heading">On this page</p>
+        <ul class="toc-list">
+            <li><a href="#intro"       class="toc-link active"><span class="toc-num">1</span>Introduction</a></li>
+            <li><a href="#get-started" class="toc-link"><span class="toc-num">2</span>Getting Started</a></li>
+            <li><a href="#add-field"   class="toc-link"><span class="toc-num">3</span>Adding a Field</a></li>
+            <li><a href="#analysis"    class="toc-link"><span class="toc-num">4</span>Plant Analysis</a></li>
+            <li><a href="#recovery"    class="toc-link"><span class="toc-num">5</span>Recovery Tracker</a></li>
+            <li><a href="#history"     class="toc-link"><span class="toc-num">6</span>Analysis History</a></li>
+            <li><a href="#safety"      class="toc-link"><span class="toc-num">7</span>Safety & Best Practices</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main content -->
+    <main class="manual-main">
+
+        <!-- ── Section 1: Introduction ── -->
+        <div class="manual-card" id="intro">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" x2="12" y1="8" y2="12"/>
+                        <line x1="12" x2="12.01" y1="16" y2="16"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 1</p>
+                    <h2 class="mch-title">Introduction</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <p class="manual-para">
+                    TeaCare AI is a smart system that helps tea farmers quickly detect diseases on tea leaves,
+                    get accurate treatment recommendations, and track the recovery progress of the same leaf over time.
+                </p>
+                <p class="manual-label">Main Features</p>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                        <span>Create an account and manage your fields</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                        <span>Upload a tea leaf photo for instant disease analysis</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                        <span>Receive clear symptoms, treatments, and practical tips</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                        <span>Track recovery using the same Barcode / Plant ID</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 2: Getting Started ── -->
+        <div class="manual-card" id="get-started">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" x2="3" y1="12" y2="12"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 2</p>
+                    <h2 class="mch-title">How to Get Started</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+
+                <!-- Create Account -->
+                <div class="substep-block">
+                    <div class="substep-tag">Step 1 — Create an Account</div>
+                    <div class="step-list">
+                        <div class="step-row">
+                            <div class="step-bubble">1</div>
+                            <div class="step-body">
+                                <p class="step-title">Open the Application</p>
+                                <p class="step-desc">Launch TeaCare AI in your web browser or mobile device.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <div class="step-bubble">2</div>
+                            <div class="step-body">
+                                <p class="step-title">Click <em>Sign Up</em></p>
+                                <p class="step-desc">If you don't have an account yet, tap Sign Up on the landing page.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <div class="step-bubble">3</div>
+                            <div class="step-body">
+                                <p class="step-title">Fill in Your Details</p>
+                                <div class="field-chips">
+                                    <span class="field-chip">First Name</span>
+                                    <span class="field-chip">Last Name</span>
+                                    <span class="field-chip">Email Address</span>
+                                    <span class="field-chip">Phone (optional)</span>
+                                    <span class="field-chip">Password</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <div class="step-bubble">4</div>
+                            <div class="step-body">
+                                <p class="step-title">Click <em>Create Account</em></p>
+                                <p class="step-desc">After registration you'll be automatically redirected to the Login page.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Login -->
+                <div class="substep-block">
+                    <div class="substep-tag">Step 2 — Login</div>
+                    <div class="step-list">
+                        <div class="step-row">
+                            <div class="step-bubble">1</div>
+                            <div class="step-body">
+                                <p class="step-title">Enter your credentials</p>
+                                <p class="step-desc">Type your registered Email Address and Password.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <div class="step-bubble">2</div>
+                            <div class="step-body">
+                                <p class="step-title">Click <em>Login</em></p>
+                                <p class="step-desc">You will be taken to the Home / Plant Analyzer page on success.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Section 3: Adding a Field ── -->
+        <div class="manual-card" id="add-field">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 3</p>
+                    <h2 class="mch-title">Adding a Field</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <div class="callout callout-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="flex-shrink:0;margin-top:1px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" x2="12" y1="8" y2="12"/>
+                        <line x1="12" x2="12.01" y1="16" y2="16"/>
+                    </svg>
+                    <p><strong>Before analyzing a leaf,</strong> you must create at least one field. Fields help you organise scans by location and plot.</p>
+                </div>
+                <div class="step-list">
+                    <div class="step-row">
+                        <div class="step-bubble">1</div>
+                        <div class="step-body">
+                            <p class="step-title">Go to <em>Add Field</em></p>
+                            <p class="step-desc">Click <strong>Add Field</strong> in the top navigation menu.</p>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-bubble">2</div>
+                        <div class="step-body">
+                            <p class="step-title">Fill in the field details</p>
+                            <div class="field-chips">
+                                <span class="field-chip">📍 Field Name (e.g. Nuwara Eliya Block A)</span>
+                                <span class="field-chip">🗺 Location</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-bubble">3</div>
+                        <div class="step-body">
+                            <p class="step-title">Click <em>Save Field</em></p>
+                            <p class="step-desc">Your field is now saved and ready to use in the Analyzer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 4: Plant Analysis ── -->
+        <div class="manual-card" id="analysis">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                        <path d="M11 8v6M8 11h6"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 4</p>
+                    <h2 class="mch-title">Tea Plant Analysis Process</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <p class="manual-para">Disease detection + treatment recommendation in a few clicks.</p>
+
+                <div class="step-list">
+                    <div class="step-row">
+                        <div class="step-bubble">1</div>
+                        <div class="step-body">
+                            <p class="step-title">Navigate to <em>Analyze</em></p>
+                            <p class="step-desc">Click <strong>Analyze</strong> in the top navigation menu to open the Plant Analyzer.</p>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-bubble">2</div>
+                        <div class="step-body">
+                            <p class="step-title">Upload a Tea Leaf Photo</p>
+                            <p class="step-desc">Drag &amp; drop a clear photo into the upload box, or click <strong>Browse</strong>. Supports JPG, PNG, and JPEG.</p>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-bubble">3</div>
+                        <div class="step-body">
+                            <p class="step-title">Enter the required details</p>
+                            <div class="field-chips">
+                                <span class="field-chip">🌱 Field</span>
+                                <span class="field-chip">📍 Location (or auto-detect)</span>
+                                <span class="field-chip">🏷 Barcode / Plant ID</span>
+                            </div>
+                            <div class="callout callout-warn" style="margin-top:12px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                    style="flex-shrink:0;margin-top:1px;">
+                                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" x2="12" y1="9" y2="13"/>
+                                    <line x1="12" x2="12.01" y1="17" y2="17"/>
+                                </svg>
+                                <p>The <strong>Barcode / Plant ID</strong> is critical — it links future scans of the same leaf for Recovery Tracking.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-bubble">4</div>
+                        <div class="step-body">
+                            <p class="step-title">Click <em>Start Analysis</em></p>
+                            <p class="step-desc">Hit the green <strong>Start Analysis</strong> button and wait for results.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result preview card -->
+                <div class="result-preview">
+                    <p class="manual-label" style="margin-bottom:12px;">Analysis Result — example output</p>
+                    <div class="result-rows">
+                        <div class="result-row-item">
+                            <span class="result-key">Disease Name</span>
+                            <span class="result-val" style="color:var(--primary);font-weight:700;">Tea Blister Blight</span>
+                        </div>
+                        <div class="result-row-item">
+                            <span class="result-key">Confidence</span>
+                            <span class="result-val" style="color:var(--primary);font-weight:700;">94.2%</span>
+                        </div>
+                        <div class="result-row-item">
+                            <span class="result-key">Severity</span>
+                            <span class="severity-badge medium">Medium</span>
+                        </div>
+                        <div class="result-row-item">
+                            <span class="result-key">Treatment</span>
+                            <span class="result-val">...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 5: Recovery Tracker ── -->
+        <div class="manual-card" id="recovery">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 5</p>
+                    <h2 class="mch-title">Recovery Tracker</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <p class="manual-para">
+                    If you analyze the same leaf again later using the <strong>same Barcode / Plant ID</strong>,
+                    the system automatically recognises it and tracks how well the leaf is healing after treatment.
+                </p>
+
+                <p class="manual-label">Recovery Status Stages</p>
+                <div class="status-grid">
+                    <div class="status-item status-new">
+                        <span class="status-dot"></span>New
+                    </div>
+                    <div class="status-item status-progress">
+                        <span class="status-dot"></span>Improving
+                    </div>
+                    <div class="status-item status-improved">
+                        <span class="status-dot"></span>Deteriorating
+                    </div>
+                    <div class="status-item status-healed">
+                        <span class="status-dot"></span>Stable
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="flex-shrink:0;margin-top:1px;">
+                        <path d="M9 12l2 2 4-4"/>
+                        <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
+                    <p><strong>Always use the same Barcode / Plant ID</strong> for the same leaf so the system can link scans over time and generate meaningful progress data.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 6: Analysis History ── -->
+        <div class="manual-card" id="history">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+                        <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 6</p>
+                    <h2 class="mch-title">Viewing Past Analyses</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <p class="manual-para">
+                    On the left side of the Analyzer page you will find the <strong>Analysis History</strong> panel.
+                    All previous analyses are listed there. Click any entry to view its full details again.
+                </p>
+
+                <!-- Demo history list -->
+                <div class="history-demo">
+                    <div class="history-demo-item">
+                        <div class="hist-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                            </svg>
+                        </div>
+                        <div class="hist-info">
+                            <p class="hist-name">Blister Blight</p>
+                            <p class="hist-meta">Today, 10:24 AM &middot; Block A</p>
+                        </div>
+                        <span class="hist-badge">94%</span>
+                    </div>
+                    <div class="history-demo-item">
+                        <div class="hist-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                            </svg>
+                        </div>
+                        <div class="hist-info">
+                            <p class="hist-name">Leaf</p>
+                            <p class="hist-meta">Yesterday, 3:05 PM &middot; Block B</p>
+                        </div>
+                        <span class="hist-badge">88%</span>
+                    </div>
+                    <div class="history-demo-item">
+                        <div class="hist-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                            </svg>
+                        </div>
+                        <div class="hist-info">
+                            <p class="hist-name">Grey Blight</p>
+                            <p class="hist-meta">2 days ago, 9:10 AM &middot; Block A</p>
+                        </div>
+                        <span class="hist-badge">79%</span>
+                    </div>
+                </div>
+
+                <p class="manual-para" style="font-size:13.5px;">
+                    Each entry shows the <strong>disease name</strong>, <strong>date &amp; time</strong>, and <strong>confidence %</strong>.
+                    Click any row to reload that scan's full result in the main panel.
+                </p>
+            </div>
+        </div>
+
+        <!-- ── Section 7: Safety ── -->
+        <div class="manual-card" id="safety">
+            <div class="manual-card-header">
+                <div class="mch-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mch-num">Section 7</p>
+                    <h2 class="mch-title">Safety Note &amp; Best Practices</h2>
+                </div>
+            </div>
+            <div class="manual-card-body">
+                <div class="tips-list">
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/>
+                                <circle cx="12" cy="13" r="3"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="tip-title">Use clear, well-lit photos</p>
+                            <p class="tip-desc">Shoot in good natural light with the full leaf visible and in focus. Blurry or dark photos reduce detection accuracy.</p>
+                        </div>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="tip-title">Consult a local agricultural officer</p>
+                            <p class="tip-desc">TeaCare AI provides recommendations based on standard practices. Always verify with a qualified expert before applying any chemicals.</p>
+                        </div>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="tip-title">Keep the same Barcode / Plant ID per leaf</p>
+                            <p class="tip-desc">Reusing the same ID every time you re-scan a leaf is essential for the Recovery Tracker to show accurate progress over time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Highlight active TOC link on scroll
+    const sections = document.querySelectorAll('.manual-card[id]');
+    const tocLinks  = document.querySelectorAll('.toc-link');
+
+    const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                tocLinks.forEach(l => l.classList.remove('active'));
+                const hit = document.querySelector(`.toc-link[href="#${entry.target.id}"]`);
+                if (hit) hit.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-20% 0px -65% 0px' });
+
+    sections.forEach(s => io.observe(s));
+</script>
+{% endblock %}

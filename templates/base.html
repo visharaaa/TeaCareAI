@@ -19,6 +19,7 @@
             <button class="not-actived" onclick="window.location.href='{{ url_for('home') }}'">Home</button>
             <button class="not-actived" onclick="window.location.href='{{ url_for('analayze') }}'">Analyze</button>
             <button onclick="window.location.href='{{ url_for('add_field') }}'">Add Field</button>
+            <button onclick="window.location.href='{{ url_for('user_manual') }}'">User Manual</button>
             <button class="not-actived" onclick="window.location.href='{{url_for('about')}}'">About Us</button>
 
             {% if session.get('user_code') %}
