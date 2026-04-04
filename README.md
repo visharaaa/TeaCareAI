@@ -1,256 +1,123 @@
-<<<<<<< HEAD
 # TeaCareAI
+TeaCareAI is a full-stack intelligence platform tailored for tea farmers and agronomists, specifically designed to address tea leaf diseases in Sri Lanka and beyond. 
 
-TeaCareAI is a Flask-based platform for tea leaf disease detection, treatment recommendation, and treatment progress tracking.
+By taking an ordinary smartphone picture of a tea leaf, the application leverages deeply trained vision models and Retrieval-Augmented Generation (RAG) to precisely evaluate tea leaf health, provide real-time treatment guidance, and track the recovery progress of affected fields over time.
 
-The system combines:
+## Key Features
 
-- YOLO-based tea disease detection from leaf images
-- RAG-based treatment generation (ChromaDB + SentenceTransformer + Ollama)
-- Recovery status prediction using a TensorFlow model
-- PostgreSQL-backed auth, fields, scan history, and session token management
+### 1. Leaf Status Verification & Disease Detection
+- **Leaf Verifier (`leaf_verifier.py`)**: Pre-validates uploaded images to ensure they represent a valid tea leaf, minimizing false positives on stray photos.
+- **Disease & Severity Identification (`tea_disease_identifier.py`)**: Employs an Ultralytics YOLO (PyTorch) model (`tea_disease_identifier_weight.pt`) to detect the specific disease (e.g., Blister Blight, Pestalotiopsis) and calculate the percentage of leaf infection/severity.
 
-## Current Flow
+### 2. Context-Aware Treatment Recommendations (RAG)
+- **RAG Engine (`treatment_recommendations.py`)**: Uses a local Vector Database (ChromaDB + SentenceTransformers `BAAI/bge-small-en-v1.5`) mapped to a localized treatment repository.
+- **Natural Language Explanations**: Uses Ollama running `llama3.1:8b` right on the edge to turn agriculture knowledge into actionable advice for the farmer—working entirely offline if needed.
 
-1. User signs up/logs in.
-2. User registers field details.
-3. User uploads a leaf image in Analyze.
-4. Model predicts disease, severity, infection percentage, and lesion metadata.
-5. RAG retrieves treatment context and Ollama generates farmer-friendly guidance.
-6. Follow-up scans on the same chat barcode calculate recovery trend (`new`, `improving`, `stable`, `deteriorating`).
+### 3. Analytics & Recovery Tracking
+- **Post-treatment Tracking (`recovery_tracker.py`)**: Associates scans using a unique chat/scan barcode. Uses a TensorFlow/Keras Neural Network (`recovery_model.h5`) to analyze sequential data and deduce whether a plant's health is "Improving," "Deteriorating," "Stable," or "New."
+- **Field Management**: Geo-tags and tracks crop elevation, tea variety, and plant age for aggregate analytics across the property.
 
-## Tech Stack
+---
 
-- Backend: Flask 3
-- Database: PostgreSQL 17
-- Vision model: Ultralytics YOLO (PyTorch)
-- RAG: ChromaDB + SentenceTransformers + Ollama
-- Recovery model: TensorFlow / Keras
-- Frontend: Jinja templates + JS + CSS
+## Architecture & Project Structure
 
-## Project Structure
-
-- `main.py`: Startup entrypoint (runs preflight checks, then starts app)
-- `app.py`: Flask routes and HTTP handlers
-- `controller.py`: Core orchestration for prediction, RAG, and persistence
-- `auth.py`: Authentication/session helpers
-- `check_constraints.py`: Preflight checks for Python version, DB schema, and Ollama model
-- `bootstrap.py`: One-time bootstrap for DB schema and Ollama model warm-up
-- `config.py`: Environment/config mapping
-- `app/database/`: DB connection, schema init, and SQL scripts
-- `app/services/`: Disease detector, RAG recommender, and recovery tracker services
-- `templates/`: HTML views
-- `static/`: CSS, JS, and uploaded image assets
-
-## Prerequisites
-
-- Python 3.11.x (project targets >=3.11 and <3.13)
-- PostgreSQL running and reachable
-- Ollama installed and running
-- Windows PowerShell (commands below)
-
-## Environment Variables
-
-Create `.env` from template:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Required variables (from `.env.example`):
-
-- `SECRET_KEY`
-- `SESSION_LIFETIME`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_HOST`
-- `DB_PORT`
-- `DB_NAME`
-- `DEFAULT_DB_NAME`
-- `OPENWEATHERMAP_API_KEY`
-
-Important additions used by the current code:
-
-- `LLM_NAME` (example: `llama3.1:8b`)
-- `EMBEDDING_MODEL` (example: `BAAI/bge-small-en-v1.5`)
-
-## Required Artifacts
-
-TeaCareAI expects these files at runtime:
-
-- `app/models/tea_disease_identifier_weight.pt`
-- `app/models/RecoveryTracker/recovery_model.h5`
-- `app/models/RecoveryTracker/scaler.pkl`
-- `app/models/RecoveryTracker/feature_columns.pkl`
-- `data/treatments_data.xlsx`
-
-Optional/training-only dataset referenced in config:
-
-- `data/tea_health_dataset.xlsx`
-
-## Local Setup and Run
-
-1. Create and activate a virtual environment.
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-2. Install dependencies.
-
-```powershell
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-If you do not have a CUDA-compatible setup, use `requirements_cuda.txt` alternatives carefully and pin versions as needed for your machine.
-
-3. Configure `.env` for your local PostgreSQL and Ollama model settings.
-
-4. Run one-time bootstrap (creates DB/schema and checks model availability via Ollama).
-
-```powershell
-python bootstrap.py
-```
-
-5. Start the application.
-
-```powershell
-python main.py
-```
-
-6. Open:
+The project relies on a modular Flask backend interfaced with independent machine learning services, bound together by a robust PostgreSQL data management tier.
 
 ```text
-http://localhost:5000
+TeaCareAI/
+├── app.py                     # Flask application routes
+├── main.py                    # Entry point: runs pre-flight constraints, then launches Flask
+├── controller.py              # Business logic coordinating services & DB operations
+├── auth.py                    # Session management and generic auth mechanisms
+├── bootstrap.py               # Creates target DB schema & primes the LLM
+├── check_constraints.py       # Ensures Python version, Ollama, & DB are active before startup
+├── config.py                  # Environment variable validations & configuration objects
+├── pyproject.toml / requirements.txt # Python dependencies
+├── docker-compose.yml / Dockerfile   # Containerization config for the stack
+├── app/
+│   ├── database/              # Data models, DB initializations SQL (`create_tables.sql`)
+│   ├── models/                # YOLO Weights (.pt) and TF Models (.h5, .pkl scalers)
+│   └── services/              # Core ML processing APIs (RAG, Inference, Tracker)
+├── data/                      # Raw Datasets & Chroma SQLite KB files
+├── scripts/                   # Model Retraining Notebooks, retriever tests (`testing.py`)
+├── static/                    # Frontend Assets (CSS, JS, Icons) + Image Uploads
+└── templates/                 # Rendered UI Views (`index.html`, `analayze.html`, etc.)
 ```
 
-## Docker Setup
+---
 
-The repository includes a CUDA-enabled Docker setup.
+## Getting Started
 
-1. Create `.env` and set `DB_HOST=db`.
-2. Build and run services.
+### Prerequisites
+- **Python:** 3.11.x
+- **PostgreSQL:** Version 14+ (Ensure a user is set up and permitted)
+- **Ollama:** Installed and actively running locally (with the selected model pulled)
+
+### Local Development Setup (Windows PowerShell)
+
+1. **Clone & Virtual Environment**
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+2. **Install Dependencies**
+   ```powershell
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+   If you do have a CUDA-compatible setup, use `requirements_cuda.txt` alternatives carefully and pin versions as needed for your machine.
+
+3. **Environment Variables**
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+   *Modify the new `.env` file to match your PostgreSQL credentials (DB_USER, DB_PASSWORD, DB_HOST, DB_NAME), the OPENWEATHERMAP_API_KEY, and ensure LLM_NAME / EMBEDDING_MODEL are aligned.*
+
+4. **Pull Local LLM Model**
+   ```powershell
+   ollama pull llama3.1:8b
+   ```
+
+5. **Initialize Database & RAG Check**
+   ```powershell
+   python bootstrap.py
+   ```
+
+6. **Start Application Server**
+   ```powershell
+   python main.py
+   ```
+   *Access the web app at `http://localhost:5000`*
+
+### Docker Deployment
+
+To spin up the entire application enclosed securely in its own environment with a managed Postgres container:
 
 ```powershell
+# Set DB_HOST=db in your .env before proceeding
 docker compose up --build
 ```
-
-3. (First run) initialize DB/schema and model bootstrap inside the app container.
-
+On the very first launch, open a terminal into the container to run the bootstrap process:
 ```powershell
 docker compose exec app python bootstrap.py
 ```
 
-4. Open `http://localhost:5000`.
+---
 
-Notes:
+##  Routes & User Flow
 
-- `docker-compose.yml` mounts `app/models` and `data/rag_kb` as volumes.
-- GPU reservation is configured through Compose `deploy.resources.reservations.devices`.
-
-## Preflight Checks
-
-Run checks manually:
-
-```powershell
-python check_constraints.py
-```
-
-`main.py` also runs this automatically before starting Flask.
-
-Checks include:
-
-- Python version check
-- PostgreSQL DB existence and required schema constraints
-- Ollama server reachability and presence of configured model
-
-## Routes
-
-UI routes:
-
-- `GET /`
-- `GET /about`
-- `GET|POST /login`
-- `GET|POST /signup`
-- `GET|POST /logout`
-- `GET|POST /field/add`
-- `GET|POST /analayze` (spelling in code is currently `analayze`)
-
-API routes:
-
-- `GET /api/fields`
-- `POST /api/generate-barcode`
-- `GET /api/chat-codes`
-
-## Database
-
-Schema script: `app/database/init_db/create_tables.sql`
-
-Main entities:
-
-- `users`
-- `field`
-- `scan_history_chat`
-- `user_scan_history`
-- `disease`
-- `detection`
-- `treatment_recommendation`
-- `applied_treatment`
-- `user_refresh_token`
-
-## Troubleshooting
-
-- App exits immediately on startup:
-  - Run `python check_constraints.py` and fix the failing check.
-- DB connection failures:
-  - Verify `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and database existence.
-- Missing Ollama model:
-  - Ensure Ollama daemon is running and pull the model set in `LLM_NAME`.
-- RAG returns poor/empty results:
-  - Ensure `data/treatments_data.xlsx` exists and has treatment-related columns.
-- Upload/prediction issues:
-  - Ensure `static/uploaded_leaves` exists and is writable.
-
-## Development Notes
-
-- Analyze route/template naming currently uses `analayze` (`templates/analayze.html`).
-- Startup chain is `main.py -> check_constraints.py -> app.py`.
-- `bootstrap.py` is intended for first-time environment/database/model initialization.
-
-=======
-# Tea Disease Treatment Recommendation RAG
-
-**Component 2** of the Tea Leaf Disease Detection, Treatment Recommendation and Recovery Tracking System.  
-**Developed for:** BSc (Hons) in AI & Data Science  
+- **Account Handling:** Users sign up (`/signup`) or log in (`/login`) tracking device telemetry.
+- **Fields:** Users manage their geographical plots of tea via `/field/add` specifying variety and age.
+- **Analyze Dashboard:** Accessed via `/analayze`, farmers upload their images.
 
 ---
 
-## Overview
+##  Background Jobs & Development Scripts
 
-This is a **Retrieval-Augmented Generation (RAG)** system designed to provide accurate, severity-specific treatment recommendations for common tea leaf diseases in Sri Lanka. 
+The `/scripts/` folder houses research and ops protocols:
+- `train_model.py`: Pipeline for updating the Keras recovery timeline model.
+- `report_generator.ipynb`: Notebook analyzing historical dataset aggregates.
+- `retriever_correctness.py`: Utility testing chroma extraction vs. expected ground truths for debugging.
 
-By taking a **disease name and severity level** as input, the system returns:
-- **Matched Disease & Severity:** High-precision metadata filtering.
-- **Detailed Symptoms:** Specific indicators for the identified stage.
-- **Multi-Modal Treatments:** Cultural, chemical, and biocontrol options.
-- **Farmer-Friendly Explanations:** Natural language responses generated locally by Ollama.
 
-### Key Highlights
-- **94.4% Retriever Accuracy:** Reliable data fetching from the knowledge base.
-- **0.893 Faithfulness Score:** Ensures LLM responses stay true to the provided facts.
-- **100% Offline:** Operates entirely without internet using local vector stores and models.
-- **Safety First:** Includes a low-confidence clarification feature (prevents answers when confidence < 50%).
-- **Integration Ready:** Optimized for API or component-based integration with JSON output.
-
----
-
-## Features
-
-- **Metadata Filtering:** Ensures 100% accurate matching for Disease + Severity combinations.
-- **Local Intelligence:** Uses Ollama (Llama 3.1) for human-like reasoning without cloud dependency.
-- **Robust Output:** Supports both natural language for farmers and structured JSON for developers.
-- **Full Traceability:** Automatically logs every query, result, and evaluation metric to CSV and JSON.
-- **Clean Architecture:** Modular class-based design using the `TeaDiseaseRAG` class.
----

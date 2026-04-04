@@ -16,7 +16,7 @@ header {
 }
 
 header img {
-    width: 68px;
+    height: 110%;
     flex-shrink: 0;
 }
 

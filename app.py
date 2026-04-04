@@ -12,6 +12,10 @@ def home():
     user = auth.get_current_user()
     return render_template('index.html', user=user)
 
+@app.route('/user_manual')
+def user_manual():
+    return render_template('user_manual.html')
+
 @app.route('/about')
 def about():
     return render_template('about.html')
@@ -149,6 +153,7 @@ def analayze():
 
         #getting the result from tea_disease_identifier,treatment_recommendations and recovery_tracker
         results = predict(user_code,image_file,field_id=field_id,chat_code=barcode, latitude=latitude, longitude=longitude)
+        print(results)
         return jsonify(results), 200
 
     print(session['user_code'])

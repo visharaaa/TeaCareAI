@@ -223,13 +223,29 @@
                         <h3>Analysis Result</h3>
                         <span class="result-badge" id="result-badge">—</span>
                     </div>
-                    <div class="result-rows">
+
+                    <div class="error-banner" id="error-banner" style="display:none;">
+                        <div class="error-banner-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" x2="12" y1="8" y2="12"/>
+                                <line x1="12" x2="12.01" y1="16" y2="16"/>
+                            </svg>
+                        </div>
+                        <div class="error-banner-body">
+                            <p class="error-banner-title">Unable to Process Image</p>
+                            <p class="error-banner-msg" id="error-banner-msg"></p>
+                        </div>
+                    </div>
+
+                    <div class="result-rows" id="result-rows">
                         <div class="result-row">
                             <span class="result-label" id="status-label">Status</span>
                             <span class="result-value" id="status-text">Waiting...</span>
                         </div>
                         <div class="result-row">
-                            <span class="result-label">Confidence</span>
+                            <span class="result-label" id="confidence-label">Confidence</span>
                             <span class="result-value" id="confidence-text">--%</span>
                         </div>
                         <div class="result-row">

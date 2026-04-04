@@ -1,0 +1,181 @@
+<svg width="100%" height="100%" viewBox="120 50 440 560" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <clipPath id="leafClip">
+    <path d="M340 80 C290 90 230 150 220 230 C210 310 240 390 280 430 C300 450 320 460 340 462 C360 460 380 450 400 430 C440 390 470 310 460 230 C450 150 390 90 340 80 Z"/>
+  </clipPath>
+  <linearGradient id="leafRight" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#e8f8f0"/>
+    <stop offset="100%" stop-color="#3db86a"/>
+  </linearGradient>
+  <linearGradient id="magGlass" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#d0d8dc"/>
+    <stop offset="100%" stop-color="#8a9aa0"/>
+  </linearGradient>
+  <linearGradient id="magLens" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#c8eeff" stop-opacity="0.85"/>
+    <stop offset="100%" stop-color="#a0d8f0" stop-opacity="0.6"/>
+  </linearGradient>
+  <linearGradient id="handleGrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#c0cdd2"/>
+    <stop offset="100%" stop-color="#6a7a80"/>
+  </linearGradient>
+  <radialGradient id="lensShine" cx="35%" cy="30%" r="50%">
+    <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
+    <stop offset="100%" stop-color="white" stop-opacity="0"/>
+  </radialGradient>
+
+  <style>
+    @keyframes drawArc {
+      from { stroke-dashoffset: 1320; }
+      to   { stroke-dashoffset: 0; }
+    }
+    @keyframes leafIn {
+      from { opacity:0; transform: scale(0.7) translateY(30px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+    @keyframes wireDraw {
+      from { stroke-dashoffset: 400; }
+      to   { stroke-dashoffset: 0; }
+    }
+    @keyframes nodePop {
+      0%   { r:0; opacity:0; }
+      70%  { r:6; opacity:1; }
+      100% { r:4; opacity:1; }
+    }
+    @keyframes spotIn {
+      from { opacity:0; transform:scale(0); }
+      to   { opacity:0.85; transform:scale(1); }
+    }
+    @keyframes magSwing {
+      from { opacity:0; transform: translate(60px, -40px) rotate(20deg); }
+      to   { opacity:1; transform: translate(0,0) rotate(0deg); }
+    }
+    @keyframes scanRing {
+      0%   { r:10; opacity:0.9; }
+      100% { r:68; opacity:0; }
+    }
+    @keyframes diseasePulse {
+      0%,100% { opacity:1; }
+      50%      { opacity:0.5; }
+    }
+    @keyframes scanLine {
+      0%   { transform: translateY(-55px); opacity:0.8; }
+      50%  { opacity:0.9; }
+      100% { transform: translateY(55px);  opacity:0.8; }
+    }
+    @keyframes textUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes nodeBlink {
+      0%,100% { opacity:1; fill:#1a90d4; }
+      50%      { opacity:0.3; fill:#56c8ff; }
+    }
+    @keyframes ringGlow {
+      0%,100% { filter: drop-shadow(0 0 2px #aac); }
+      50%      { filter: drop-shadow(0 0 10px #4af); }
+    }
+
+    .arc-ring   { stroke-dasharray:1320; animation: drawArc 1.6s 0.2s cubic-bezier(.4,0,.2,1) both; }
+    .leaf-group { transform-origin:340px 270px; animation: leafIn 0.7s 0.8s cubic-bezier(.34,1.56,.64,1) both; }
+    .wire1      { stroke-dasharray:400; animation: wireDraw 0.8s 1.4s ease both; }
+    .wire2      { stroke-dasharray:400; animation: wireDraw 0.8s 1.5s ease both; }
+    .wire3      { stroke-dasharray:400; animation: wireDraw 0.8s 1.6s ease both; }
+    .wire4      { stroke-dasharray:400; animation: wireDraw 0.8s 1.7s ease both; }
+    .wire5      { stroke-dasharray:400; animation: wireDraw 0.8s 1.8s ease both; }
+    .wire6      { stroke-dasharray:400; animation: wireDraw 0.8s 1.9s ease both; }
+    .node1      { animation: nodePop 0.4s 2.2s ease both, nodeBlink 2s 3s ease-in-out infinite; }
+    .node2      { animation: nodePop 0.4s 2.3s ease both, nodeBlink 2s 3.3s ease-in-out infinite; }
+    .node3      { animation: nodePop 0.4s 2.4s ease both, nodeBlink 2s 3.6s ease-in-out infinite; }
+    .node4      { animation: nodePop 0.4s 2.5s ease both, nodeBlink 2s 3.9s ease-in-out infinite; }
+    .node5      { animation: nodePop 0.4s 2.6s ease both, nodeBlink 2s 4.2s ease-in-out infinite; }
+    .spot       { transform-origin: center; animation: spotIn 0.3s ease both, diseasePulse 3s 3s ease-in-out infinite; }
+    .spot1      { animation-delay: 1.8s, 3.1s; }
+    .spot2      { animation-delay: 1.9s, 3.3s; }
+    .spot3      { animation-delay: 2.0s, 3.5s; }
+    .spot4      { animation-delay: 2.1s, 3.7s; }
+    .spot5      { animation-delay: 2.2s, 3.9s; }
+    .spot6      { animation-delay: 2.3s, 4.1s; }
+    .spot7      { animation-delay: 2.4s, 4.3s; }
+    .mag-group  { transform-origin:410px 365px; animation: magSwing 0.7s 2.6s cubic-bezier(.34,1.56,.64,1) both; }
+    .scan-ring1 { transform-origin:360px 308px; animation: scanRing 1.5s 3.2s ease-out infinite; }
+    .scan-ring2 { transform-origin:360px 308px; animation: scanRing 1.5s 3.9s ease-out infinite; }
+    .scan-line  { transform-origin:360px 308px; animation: scanLine 1.8s 3.2s ease-in-out infinite; }
+    .mag-glow   { animation: ringGlow 2s 3.5s ease-in-out infinite; }
+    .text-main  { animation: textUp 0.6s 3.0s ease both; }
+    .text-sub   { animation: textUp 0.6s 3.3s ease both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+</defs>
+
+<path class="arc-ring" d="M 160 420 A 200 200 0 1 1 520 420"
+      fill="none" stroke="#2a7a3c" stroke-width="14" stroke-linecap="round"/>
+
+<g class="leaf-group">
+  <path d="M340 80 C290 90 230 150 220 230 C210 310 240 390 280 430 C300 450 320 460 340 462 C360 460 380 450 400 430 C440 390 470 310 460 230 C450 150 390 90 340 80 Z"
+        fill="white" stroke="#2a7a3c" stroke-width="3"/>
+  <g clip-path="url(#leafClip)">
+    <rect x="220" y="80" width="120" height="385" fill="#f4fdf8"/>
+    <g fill="none" stroke="#1a90d4" stroke-linecap="round" stroke-linejoin="round">
+      <line class="wire1" stroke-width="2" x1="340" y1="462" x2="340" y2="100"/>
+      <polyline class="wire2" stroke-width="2" points="325,340 295,340 295,310 270,310"/>
+      <polyline class="wire3" stroke-width="2" points="316,290 285,290 285,265 258,265"/>
+      <polyline class="wire4" stroke-width="2" points="326,230 296,230 296,205 268,205"/>
+      <polyline class="wire5" stroke-width="2" points="330,175 302,175"/>
+      <polyline class="wire6" stroke-width="2" points="320,145 300,145 300,125"/>
+    </g>
+    <circle class="node1" cx="270" cy="310" r="4" fill="#1a90d4"/>
+    <circle class="node2" cx="258" cy="265" r="4" fill="#1a90d4"/>
+    <circle class="node3" cx="268" cy="205" r="4" fill="#1a90d4"/>
+    <circle class="node4" cx="302" cy="175" r="4" fill="#1a90d4"/>
+    <circle class="node5" cx="300" cy="125" r="4" fill="#1a90d4"/>
+    <rect x="340" y="80" width="120" height="385" fill="url(#leafRight)"/>
+    <ellipse class="spot spot1" cx="375" cy="160" rx="14" ry="10" fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot2" cx="400" cy="195" rx="10" ry="8"  fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot3" cx="385" cy="230" rx="8"  ry="6"  fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot4" cx="415" cy="260" rx="12" ry="9"  fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot5" cx="370" cy="295" rx="9"  ry="7"  fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot6" cx="405" cy="325" rx="11" ry="8"  fill="#1a3a22" opacity="0"/>
+    <ellipse class="spot spot7" cx="360" cy="145" rx="6"  ry="5"  fill="#1a3a22" opacity="0"/>
+    <line x1="340" y1="80" x2="340" y2="462" stroke="#2a7a3c" stroke-width="2.5" opacity="0.4"/>
+  </g>
+  <path d="M340 80 C290 90 230 150 220 230 C210 310 240 390 280 430 C300 450 320 460 340 462 C360 460 380 450 400 430 C440 390 470 310 460 230 C450 150 390 90 340 80 Z"
+        fill="none" stroke="#2a7a3c" stroke-width="3"/>
+</g>
+
+<g class="mag-group">
+  <line x1="395" y1="355" x2="450" y2="418" stroke="url(#handleGrad)" stroke-width="18" stroke-linecap="round"/>
+  <line x1="395" y1="355" x2="450" y2="418" stroke="white"            stroke-width="5"  stroke-linecap="round" opacity="0.3"/>
+  <g class="mag-glow">
+    <circle cx="360" cy="308" r="68" fill="none" stroke="url(#magGlass)" stroke-width="14"/>
+    <circle cx="360" cy="308" r="68" fill="none" stroke="white"          stroke-width="4" opacity="0.35"/>
+  </g>
+  <circle cx="360" cy="308" r="55" fill="url(#magLens)"/>
+  <circle cx="360" cy="308" r="55" fill="url(#lensShine)"/>
+  <line class="scan-line" x1="305" y1="308" x2="415" y2="308"
+        stroke="#00ff88" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <circle class="scan-ring1" cx="360" cy="308" r="10" fill="none" stroke="#00cc66" stroke-width="2" opacity="0"/>
+  <circle class="scan-ring2" cx="360" cy="308" r="10" fill="none" stroke="#00cc66" stroke-width="1.5" opacity="0"/>
+  <circle cx="346" cy="294" r="13" fill="#cc2020"/>
+  <circle cx="374" cy="294" r="13" fill="#cc2020"/>
+  <circle cx="346" cy="322" r="13" fill="#cc2020"/>
+  <circle cx="374" cy="322" r="13" fill="#cc2020"/>
+  <circle cx="360" cy="308" r="10" fill="#cc2020"/>
+  <line x1="345" y1="293" x2="375" y2="323" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="375" y1="293" x2="345" y2="323" stroke="white" stroke-width="4" stroke-linecap="round"/>
+</g>
+
+<text class="text-main" x="340" y="535" text-anchor="middle"
+      font-family="Arial Black, Impact, sans-serif"
+      font-size="68" font-weight="900" letter-spacing="2">
+  <tspan fill="#2a7a3c">Tea </tspan><tspan fill="#1a7a3c">Care </tspan><tspan fill="#4ab870" font-size="52">AI</tspan>
+</text>
+
+<text class="text-sub" x="340" y="576" text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="18" font-weight="400" letter-spacing="3"
+      fill="#4a9a5c">DISEASE ANALYSIS &amp; IDENTIFICATION</text>
+</svg>
