@@ -466,14 +466,14 @@
 }
 
 .status-new      { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-.status-progress { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-.status-improved { background: var(--primary-tint); border-color: var(--primary-border); color: var(--primary); }
-.status-healed   { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.status-improving { background: #dcfce7; border-color: #86efac; color: #16a34a; }
+.status-deteriorating { background: #fee2e2; border-color:#fca5a5; color: #dc2626; }
+.status-stable   { background: #dddddd; border-color: #3d5c47; color: #3d5c47; }
 
 .status-new      .status-dot { background: #3b82f6; }
-.status-progress .status-dot { background: #f59e0b; }
-.status-improved .status-dot { background: var(--primary); }
-.status-healed   .status-dot { background: #22c55e; }
+.status-improving .status-dot { background: #16a34a; }
+.status-deteriorating .status-dot { background: #dc2626; }
+.status-stable   .status-dot { background: #3d5c47; }
 
 
 /* ── History demo ── */
