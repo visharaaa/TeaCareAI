@@ -188,7 +188,7 @@ INSERT INTO disease (disease_name, description, standard_symptoms) VALUES
         'Water-soaked brown lesions on leaves and stems; dark brown to black necrotic areas; premature defoliation; dieback of young shoots; pinkish spore masses in humid conditions'
     ),
     (
-        'Gray Blight',
+        'Grey Blight',
         'A fungal disease caused by Pestalotiopsis spp. often occurring as secondary infection on already stressed or wounded tea plants.',
         'Grayish-white irregular lesions on mature leaves; dark borders around lesions; black fruiting bodies visible on leaf surface; tip burn appearance; gradual spread from leaf margins inward'
     ),
