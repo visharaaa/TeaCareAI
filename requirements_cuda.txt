@@ -7,13 +7,13 @@ joblib>=1.5.3
 ollama>=0.6.1
 pandas>=3.0.2
 protobuf>=3.19.0
-psycopg2>=2.9.11
+psycopg2-binary>=2.9.11
 requests>=2.33.1
 tensorflow>=2.21.0
 ultralytics>=8.4.33
-torch>=2.7.0+cu128
-torchvision>=0.22.0+cu128
-torchaudio>=2.7.0+cu128
+torch==2.7.0+cu128
+torchvision==0.22.0+cu128
+torchaudio==2.7.0+cu128
 sentence-transformers>=5.3.0
 chromadb>=1.5.5
 opentelemetry-api>=1.40.0

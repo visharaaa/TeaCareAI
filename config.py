@@ -22,7 +22,7 @@ class Config:
 
     # 3. YOLO Detection Settings
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    TEA_DISEASE_IDENTIFIER_MODEL_PATH = os.path.join(BASE_DIR, "app", "models","tea_disease_identifier_weight.pt")
+    TEA_DISEASE_IDENTIFIER_MODEL_PATH = os.path.join(BASE_DIR, "app", "models","tea_disease_identifier_weight_v3.pt")
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploaded_leaves")
     
     

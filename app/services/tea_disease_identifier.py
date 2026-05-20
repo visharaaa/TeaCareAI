@@ -177,7 +177,7 @@ class TeaDiseaseIdentifier:
 #must pass the infection percentage as a float.
 
 
-# teaDiseaseIdentifier=TeaDiseaseIdentifier('./tea_disease_identifier_weight.pt','./data/processed/final_dataset/Blister Blight (Exobasidium vexans)')
+# teaDiseaseIdentifier=TeaDiseaseIdentifier('./tea_disease_identifier_weight_v1.pt','./data/processed/final_dataset/Blister Blight (Exobasidium vexans)')
 # result=teaDiseaseIdentifier.get_disease('Blister_Blight_dt5_00147.jpg')
 # #result.pop('masks')
 # #print(result)
