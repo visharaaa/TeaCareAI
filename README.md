@@ -1,4 +1,7 @@
-# TeaCareAI
+# TeaCareAI 
+
+Demo Video: https://youtu.be/u05saYMyKJM
+
 TeaCareAI is a full-stack intelligence platform tailored for tea farmers and agronomists, specifically designed to address tea leaf diseases in Sri Lanka and beyond. 
 
 By taking an ordinary smartphone picture of a tea leaf, the application leverages deeply trained vision models and Retrieval-Augmented Generation (RAG) to precisely evaluate tea leaf health, provide real-time treatment guidance, and track the recovery progress of affected fields over time.
